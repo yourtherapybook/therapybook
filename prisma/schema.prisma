@@ -1,0 +1,292 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String
+  lastName  String
+  phone     String?
+  password  String?  // Made optional for OAuth users
+  role      UserRole @default(CLIENT)
+  
+  // NextAuth.js fields
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  traineeApplication TraineeApplication?
+  clientSessions     Session[] @relation("ClientSessions")
+  therapistSessions  Session[] @relation("TherapistSessions")
+  payments          Payment[]
+  availability       TherapistAvailability[] @relation("TherapistAvailability")
+  unavailableSlots   UnavailableSlot[] @relation("UnavailableSlots")
+  
+  // NextAuth.js relations
+  accounts Account[]
+  sessions UserSession[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model TraineeApplication {
+  id            String                    @id @default(cuid())
+  userId        String                    @unique
+  status        ApplicationStatus         @default(DRAFT)
+  currentStep   Int                       @default(1)
+  completedSteps Int[]                    @default([])
+  
+  // Step 1: Account Information (stored in User model)
+  
+  // Step 2: Office Location
+  practiceName     String?
+  practiceWebsite  String?
+  officePhone      String?
+  street           String?
+  addressLine2     String?
+  city             String?
+  stateProvince    String?
+  zipPostalCode    String?
+  country          String?
+  
+  // Step 3: Public Profile
+  title                String?
+  therapistType        String?              @default("Student Intern / Trainee")
+  institutionOfStudy   String?
+  skillsAcquired       String[]            @default([])
+  otherSkills          String?
+  specialties          String[]            @default([])
+  treatmentOrientation String[]            @default([])
+  modality             String[]            @default([])
+  ageGroups            String[]            @default([])
+  languages            String[]            @default([])
+  otherLanguages       String?
+  ethnicitiesServed    String[]            @default([])
+  personalStatement    String?
+  profilePhotoUrl      String?
+  
+  // Step 4: Agreements
+  motivationStatement        String?
+  paymentAgreement          Boolean         @default(false)
+  responseTimeAgreement     Boolean         @default(false)
+  minimumClientCommitment   Boolean         @default(false)
+  termsOfService           Boolean         @default(false)
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  approvedAt  DateTime?
+  
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals Referral[]
+  
+  @@map("trainee_applications")
+}
+
+model Referral {
+  id                   String             @id @default(cuid())
+  traineeApplicationId String
+  firstName            String
+  lastName             String
+  workEmail            String
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  traineeApplication TraineeApplication @relation(fields: [traineeApplicationId], references: [id], onDelete: Cascade)
+  
+  @@map("referrals")
+}
+
+model Session {
+  id          String        @id @default(cuid())
+  clientId    String
+  therapistId String
+  status      SessionStatus @default(SCHEDULED)
+  
+  // Session details
+  scheduledAt DateTime
+  duration    Int           @default(50) // minutes
+  meetingUrl  String?
+  notes       String?
+  
+  // Pricing
+  price       Decimal       @db.Decimal(10, 2)
+  currency    String        @default("EUR")
+  
+  // Timestamps
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  completedAt DateTime?
+  cancelledAt DateTime?
+  
+  // Relations
+  client    User    @relation("ClientSessions", fields: [clientId], references: [id])
+  therapist User    @relation("TherapistSessions", fields: [therapistId], references: [id])
+  payment   Payment?
+  
+  @@map("sessions")
+}
+
+model TherapistAvailability {
+  id          String    @id @default(cuid())
+  therapistId String
+  
+  // Availability details
+  dayOfWeek   Int       // 0 = Sunday, 1 = Monday, etc.
+  startTime   String    // Format: "09:00"
+  endTime     String    // Format: "17:00"
+  isActive    Boolean   @default(true)
+  
+  // Date range (optional - for specific date overrides)
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  therapist   User      @relation("TherapistAvailability", fields: [therapistId], references: [id], onDelete: Cascade)
+  
+  @@map("therapist_availability")
+}
+
+model UnavailableSlot {
+  id          String    @id @default(cuid())
+  therapistId String
+  
+  // Unavailable period
+  startDateTime DateTime
+  endDateTime   DateTime
+  reason        String?   // "vacation", "sick", "personal", etc.
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  therapist   User      @relation("UnavailableSlots", fields: [therapistId], references: [id], onDelete: Cascade)
+  
+  @@map("unavailable_slots")
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  userId    String
+  sessionId String?       @unique
+  
+  // Payment details
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("EUR")
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   String?       // stripe, paypal, etc.
+  
+  // External references
+  stripePaymentId String?       @unique
+  paypalOrderId   String?       @unique
+  
+  // Metadata
+  description     String?
+  receiptUrl      String?
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  processedAt DateTime?
+  
+  // Relations
+  user    User     @relation(fields: [userId], references: [id])
+  session Session? @relation(fields: [sessionId], references: [id])
+  
+  @@map("payments")
+}
+
+// Enums
+enum UserRole {
+  CLIENT
+  TRAINEE
+  ADMIN
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}

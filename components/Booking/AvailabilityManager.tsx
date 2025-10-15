@@ -1,0 +1,409 @@
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, Plus, X, Save, Trash2, AlertCircle } from 'lucide-react';
+
+interface Availability {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  startDate?: string;
+  endDate?: string;
+}
+
+interface UnavailableSlot {
+  id: string;
+  startDateTime: string;
+  endDateTime: string;
+  reason?: string;
+}
+
+interface AvailabilityManagerProps {
+  therapistId: string;
+}
+
+const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }) => {
+  const [availability, setAvailability] = useState<Availability[]>([]);
+  const [unavailableSlots, setUnavailableSlots] = useState<UnavailableSlot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const [newAvailability, setNewAvailability] = useState({
+    dayOfWeek: 1,
+    startTime: '09:00',
+    endTime: '17:00',
+    isActive: true,
+  });
+
+  const [newUnavailableSlot, setNewUnavailableSlot] = useState({
+    startDateTime: '',
+    endDateTime: '',
+    reason: '',
+  });
+
+  const daysOfWeek = [
+    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+  ];
+
+  useEffect(() => {
+    fetchAvailability();
+  }, [therapistId]);
+
+  const fetchAvailability = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/therapists/${therapistId}/availability`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch availability');
+      }
+
+      const data = await response.json();
+      setAvailability(data.availability || []);
+      setUnavailableSlots(data.unavailableSlots || []);
+    } catch (err) {
+      console.error('Error fetching availability:', err);
+      setError('Failed to load availability. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addAvailability = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      const response = await fetch(`/api/therapists/${therapistId}/availability`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'availability',
+          ...newAvailability,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add availability');
+      }
+
+      const data = await response.json();
+      setAvailability([...availability, data.availability]);
+      setNewAvailability({
+        dayOfWeek: 1,
+        startTime: '09:00',
+        endTime: '17:00',
+        isActive: true,
+      });
+      setSuccess('Availability added successfully');
+    } catch (err) {
+      console.error('Error adding availability:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add availability');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addUnavailableSlot = async () => {
+    if (!newUnavailableSlot.startDateTime || !newUnavailableSlot.endDateTime) {
+      setError('Please provide both start and end date/time');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const response = await fetch(`/api/therapists/${therapistId}/availability`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'unavailable',
+          ...newUnavailableSlot,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add unavailable slot');
+      }
+
+      const data = await response.json();
+      setUnavailableSlots([...unavailableSlots, data.unavailableSlot]);
+      setNewUnavailableSlot({
+        startDateTime: '',
+        endDateTime: '',
+        reason: '',
+      });
+      setSuccess('Unavailable slot added successfully');
+    } catch (err) {
+      console.error('Error adding unavailable slot:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add unavailable slot');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteAvailability = async (availabilityId: string) => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      const response = await fetch(`/api/therapists/${therapistId}/availability`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ availabilityId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete availability');
+      }
+
+      setAvailability(availability.filter(a => a.id !== availabilityId));
+      setSuccess('Availability deleted successfully');
+    } catch (err) {
+      console.error('Error deleting availability:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete availability');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteUnavailableSlot = async (slotId: string) => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      const response = await fetch(`/api/therapists/${therapistId}/availability`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ unavailableSlotId: slotId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete unavailable slot');
+      }
+
+      setUnavailableSlots(unavailableSlots.filter(s => s.id !== slotId));
+      setSuccess('Unavailable slot deleted successfully');
+    } catch (err) {
+      console.error('Error deleting unavailable slot:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete unavailable slot');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formatDateTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl shadow-subtle p-6 border border-neutral-100">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <p className="text-green-800">{success}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <p className="text-red-800">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Regular Availability */}
+      <div className="bg-white rounded-2xl shadow-subtle p-6 border border-neutral-100">
+        <div className="flex items-center space-x-2 mb-6">
+          <Calendar className="h-5 w-5 text-primary-500" />
+          <h3 className="text-lg font-semibold text-neutral-900">Weekly Availability</h3>
+        </div>
+
+        {/* Current Availability */}
+        <div className="space-y-3 mb-6">
+          {availability.length === 0 ? (
+            <p className="text-neutral-500 text-center py-4">No availability set. Add your first availability slot below.</p>
+          ) : (
+            availability.map((avail) => (
+              <div key={avail.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <span className="font-medium text-neutral-900">
+                    {daysOfWeek[avail.dayOfWeek]}
+                  </span>
+                  <span className="text-neutral-600">
+                    {avail.startTime} - {avail.endTime}
+                  </span>
+                  {!avail.isActive && (
+                    <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">Inactive</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => deleteAvailability(avail.id)}
+                  disabled={saving}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Add New Availability */}
+        <div className="border-t border-neutral-200 pt-6">
+          <h4 className="text-sm font-medium text-neutral-700 mb-3">Add New Availability</h4>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <select
+              value={newAvailability.dayOfWeek}
+              onChange={(e) => setNewAvailability({ ...newAvailability, dayOfWeek: parseInt(e.target.value) })}
+              className="p-2 border border-neutral-300 rounded-lg"
+            >
+              {daysOfWeek.map((day, index) => (
+                <option key={index} value={index}>{day}</option>
+              ))}
+            </select>
+            <input
+              type="time"
+              value={newAvailability.startTime}
+              onChange={(e) => setNewAvailability({ ...newAvailability, startTime: e.target.value })}
+              className="p-2 border border-neutral-300 rounded-lg"
+            />
+            <input
+              type="time"
+              value={newAvailability.endTime}
+              onChange={(e) => setNewAvailability({ ...newAvailability, endTime: e.target.value })}
+              className="p-2 border border-neutral-300 rounded-lg"
+            />
+            <button
+              onClick={addAvailability}
+              disabled={saving}
+              className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Unavailable Slots */}
+      <div className="bg-white rounded-2xl shadow-subtle p-6 border border-neutral-100">
+        <div className="flex items-center space-x-2 mb-6">
+          <X className="h-5 w-5 text-red-500" />
+          <h3 className="text-lg font-semibold text-neutral-900">Unavailable Periods</h3>
+        </div>
+
+        {/* Current Unavailable Slots */}
+        <div className="space-y-3 mb-6">
+          {unavailableSlots.length === 0 ? (
+            <p className="text-neutral-500 text-center py-4">No unavailable periods set.</p>
+          ) : (
+            unavailableSlots.map((slot) => (
+              <div key={slot.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                <div>
+                  <div className="font-medium text-neutral-900">
+                    {formatDateTime(slot.startDateTime)} - {formatDateTime(slot.endDateTime)}
+                  </div>
+                  {slot.reason && (
+                    <div className="text-sm text-neutral-600 mt-1">{slot.reason}</div>
+                  )}
+                </div>
+                <button
+                  onClick={() => deleteUnavailableSlot(slot.id)}
+                  disabled={saving}
+                  className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Add New Unavailable Slot */}
+        <div className="border-t border-neutral-200 pt-6">
+          <h4 className="text-sm font-medium text-neutral-700 mb-3">Add Unavailable Period</h4>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-neutral-600 mb-1">Start Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={newUnavailableSlot.startDateTime}
+                  onChange={(e) => setNewUnavailableSlot({ ...newUnavailableSlot, startDateTime: e.target.value })}
+                  className="w-full p-2 border border-neutral-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-600 mb-1">End Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={newUnavailableSlot.endDateTime}
+                  onChange={(e) => setNewUnavailableSlot({ ...newUnavailableSlot, endDateTime: e.target.value })}
+                  className="w-full p-2 border border-neutral-300 rounded-lg"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-neutral-600 mb-1">Reason (Optional)</label>
+              <input
+                type="text"
+                value={newUnavailableSlot.reason}
+                onChange={(e) => setNewUnavailableSlot({ ...newUnavailableSlot, reason: e.target.value })}
+                placeholder="e.g., Vacation, Conference, Personal"
+                className="w-full p-2 border border-neutral-300 rounded-lg"
+              />
+            </div>
+            <button
+              onClick={addUnavailableSlot}
+              disabled={saving || !newUnavailableSlot.startDateTime || !newUnavailableSlot.endDateTime}
+              className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Unavailable Period</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AvailabilityManager;
