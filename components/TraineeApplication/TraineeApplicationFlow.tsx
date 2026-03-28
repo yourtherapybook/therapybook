@@ -2,7 +2,6 @@ import React from 'react';
 import { ApplicationProvider } from './ApplicationProvider';
 import { useApplicationState } from '../../hooks/useApplicationState';
 import ProgressIndicator from './ProgressIndicator';
-import StepNavigation from './StepNavigation';
 import Step1AccountInfo from './Steps/Step1AccountInfo';
 import Step2OfficeLocation from './Steps/Step2OfficeLocation';
 import Step3PublicProfile from './Steps/Step3PublicProfile';
@@ -112,17 +111,6 @@ const TraineeApplicationFlowContent: React.FC = () => {
       <div className="bg-white rounded-2xl shadow-subtle p-8 mt-8">
         {renderCurrentStep()}
       </div>
-
-      {/* Step Navigation */}
-      <StepNavigation
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        onBack={previousStep}
-        onNext={nextStep}
-        isValid={validateCurrentStep().isValid}
-        isLoading={isLoading}
-      />
-
       {/* Global error display */}
       {Object.keys(errors).length > 0 && (
         <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">

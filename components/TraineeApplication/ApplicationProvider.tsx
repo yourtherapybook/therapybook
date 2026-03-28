@@ -1,12 +1,13 @@
+"use client";
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
-import { 
-  TraineeApplication, 
-  ApplicationContextType, 
-  ApplicationProviderProps, 
+import {
+  TraineeApplication,
+  ApplicationContextType,
+  ApplicationProviderProps,
   FormValidation,
-  createEmptyApplication 
+  createEmptyApplication
 } from '../../types/trainee-application';
 import { validateStep, validateField, validateAllSteps } from '../../lib/validation';
 
@@ -151,7 +152,57 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
   });
 
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const resolvedApplicationId = applicationId || searchParams?.get('id') || undefined;
+  const { user, isAuthenticated, register: registerUser } = useAuth();
+
+  const buildUrl = useCallback((step: number, id?: string) => {
+    const current = new URLSearchParams(Array.from(searchParams?.entries() || []));
+    current.set('step', step.toString());
+
+    if (id) {
+      current.set('id', id);
+    }
+
+    return `${pathname}?${current.toString()}`;
+  }, [pathname, searchParams]);
+
+  const buildAuthenticatedDraft = useCallback((): Partial<TraineeApplication> => ({
+    ...createEmptyApplication(),
+    accountInfo: {
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      email: user?.email || '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      requiresPassword: false,
+    },
+  }), [user]);
+
+  const persistApplication = useCallback(async (
+    snapshot: Partial<TraineeApplication>,
+    id?: string
+  ) => {
+    const response = await fetch('/api/trainee/application', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...snapshot,
+        id,
+      }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.error || 'Failed to save application');
+    }
+
+    return response.json();
+  }, []);
 
   // Auto-save functionality with debouncing
   const performAutoSave = useCallback(async () => {
@@ -160,47 +211,30 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
     try {
       dispatch({ type: 'SET_SAVING', payload: true });
 
-      const response = await fetch('/api/trainee/application', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...state.application,
-          id: applicationId,
-          updatedAt: new Date(),
-        }),
-      });
+      const savedApplication = await persistApplication(
+        state.application,
+        resolvedApplicationId
+      );
 
-      if (!response.ok) {
-        throw new Error('Failed to save application');
-      }
-
-      const savedApplication = await response.json();
-      
       dispatch({ type: 'SET_LAST_SAVED', payload: new Date() });
-      
-      // Update application ID if it's a new application
-      if (!applicationId && savedApplication.id) {
-        router.replace({
-          pathname: router.pathname,
-          query: { ...router.query, id: savedApplication.id },
-        }, undefined, { shallow: true });
+
+      if (!resolvedApplicationId && savedApplication.id) {
+        router.replace(buildUrl(state.currentStep, savedApplication.id));
       }
 
     } catch (error) {
       console.error('Auto-save failed:', error);
-      dispatch({ 
-        type: 'SET_ERRORS', 
-        payload: { 
-          ...state.errors, 
-          autoSave: 'Failed to save progress automatically' 
-        } 
+      dispatch({
+        type: 'SET_ERRORS',
+        payload: {
+          ...state.errors,
+          autoSave: 'Failed to save progress automatically'
+        }
       });
     } finally {
       dispatch({ type: 'SET_SAVING', payload: false });
     }
-  }, [state.application, applicationId, isAuthenticated, user, router, state.errors]);
+  }, [buildUrl, isAuthenticated, persistApplication, resolvedApplicationId, router, state.application, state.currentStep, state.errors, user]);
 
   // Debounced auto-save (saves 2 seconds after last change)
   const debouncedAutoSave = useDebounce(performAutoSave, 2000);
@@ -209,41 +243,41 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
   const loadApplication = useCallback(async (id?: string) => {
     if (!isAuthenticated || !user) return;
 
-    const loadId = id || applicationId;
-    if (!loadId) return;
+    const loadId = id || resolvedApplicationId;
 
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      const endpoint = loadId
+        ? `/api/trainee/application?id=${encodeURIComponent(loadId)}`
+        : '/api/trainee/application';
+      const response = await fetch(endpoint);
 
-      const response = await fetch(`/api/trainee/application?id=${loadId}`);
-      
       if (response.ok) {
         const applicationData = await response.json();
         dispatch({ type: 'SET_APPLICATION', payload: applicationData });
         dispatch({ type: 'SET_CURRENT_STEP', payload: applicationData.currentStep || 1 });
       } else if (response.status === 404) {
-        // Application not found, start with empty application
-        dispatch({ type: 'SET_APPLICATION', payload: createEmptyApplication() });
+        dispatch({ type: 'SET_APPLICATION', payload: buildAuthenticatedDraft() });
       } else {
         throw new Error('Failed to load application');
       }
     } catch (error) {
       console.error('Failed to load application:', error);
-      dispatch({ 
-        type: 'SET_ERRORS', 
-        payload: { 
-          load: 'Failed to load application data' 
-        } 
+      dispatch({
+        type: 'SET_ERRORS',
+        payload: {
+          load: 'Failed to load application data'
+        }
       });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [applicationId, isAuthenticated, user]);
+  }, [buildAuthenticatedDraft, isAuthenticated, resolvedApplicationId, user]);
 
   // Update application data
   const updateApplication = useCallback((data: Partial<TraineeApplication>) => {
     dispatch({ type: 'UPDATE_APPLICATION', payload: data });
-    
+
     // Clear any previous errors for updated fields
     const updatedErrors = { ...state.errors };
     Object.keys(data).forEach(key => {
@@ -258,39 +292,90 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
   // Navigation functions
   const nextStep = useCallback(() => {
     const validation = validateStep(state.currentStep, state.application);
-    
-    if (validation.isValid) {
+
+    if (!validation.isValid) {
+      dispatch({ type: 'SET_ERRORS', payload: validation.errors });
+      return;
+    }
+
+    const advanceStep = (savedApplicationId?: string) => {
       dispatch({ type: 'ADD_COMPLETED_STEP', payload: state.currentStep });
-      
+
       if (state.currentStep < 4) {
         const newStep = state.currentStep + 1;
         dispatch({ type: 'SET_CURRENT_STEP', payload: newStep });
         dispatch({ type: 'UPDATE_APPLICATION', payload: { currentStep: newStep } });
-        
-        // Update URL
-        router.push({
-          pathname: router.pathname,
-          query: { ...router.query, step: newStep.toString() },
-        }, undefined, { shallow: true });
+        router.push(buildUrl(newStep, savedApplicationId || resolvedApplicationId));
       }
-    } else {
-      dispatch({ type: 'SET_ERRORS', payload: validation.errors });
+    };
+
+    const registerAndBindAccount = async () => {
+      const accountInfo = state.application.accountInfo;
+      if (!accountInfo) {
+        dispatch({ type: 'SET_ERRORS', payload: { accountInfo: 'Account information is missing.' } });
+        return;
+      }
+
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        dispatch({ type: 'SET_ERRORS', payload: {} });
+
+        await registerUser({
+          firstName: accountInfo.firstName,
+          lastName: accountInfo.lastName,
+          email: accountInfo.email,
+          phone: accountInfo.phone || undefined,
+          password: accountInfo.password,
+        }, {
+          autoLogin: true,
+          callbackUrl: buildUrl(2),
+        });
+
+        const normalizedApplication: Partial<TraineeApplication> = {
+          ...state.application,
+          currentStep: 2,
+          completedSteps: Array.from(new Set([...(state.application.completedSteps || []), 1])),
+          accountInfo: {
+            ...accountInfo,
+            email: accountInfo.email.trim().toLowerCase(),
+            password: '',
+            confirmPassword: '',
+            requiresPassword: false,
+          },
+        };
+
+        dispatch({ type: 'SET_APPLICATION', payload: normalizedApplication });
+        const savedApplication = await persistApplication(normalizedApplication, resolvedApplicationId);
+        dispatch({ type: 'SET_LAST_SAVED', payload: new Date() });
+        advanceStep(savedApplication.id);
+      } catch (error) {
+        dispatch({
+          type: 'SET_ERRORS',
+          payload: {
+            accountInfo: error instanceof Error ? error.message : 'Failed to create your account.',
+          }
+        });
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    };
+
+    if (state.currentStep === 1 && !isAuthenticated) {
+      void registerAndBindAccount();
+      return;
     }
-  }, [state.currentStep, state.application, router]);
+
+    advanceStep();
+  }, [buildUrl, isAuthenticated, persistApplication, registerUser, resolvedApplicationId, router, state.application, state.currentStep]);
 
   const previousStep = useCallback(() => {
     if (state.currentStep > 1) {
       const newStep = state.currentStep - 1;
       dispatch({ type: 'SET_CURRENT_STEP', payload: newStep });
       dispatch({ type: 'UPDATE_APPLICATION', payload: { currentStep: newStep } });
-      
-      // Update URL
-      router.push({
-        pathname: router.pathname,
-        query: { ...router.query, step: newStep.toString() },
-      }, undefined, { shallow: true });
+      router.push(buildUrl(newStep, resolvedApplicationId));
     }
-  }, [state.currentStep, router]);
+  }, [buildUrl, resolvedApplicationId, router, state.currentStep]);
 
   const goToStep = useCallback((step: number) => {
     if (step >= 1 && step <= 4) {
@@ -299,15 +384,10 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
       if (completedSteps.includes(step) || step === state.currentStep || step === state.currentStep + 1) {
         dispatch({ type: 'SET_CURRENT_STEP', payload: step });
         dispatch({ type: 'UPDATE_APPLICATION', payload: { currentStep: step } });
-        
-        // Update URL
-        router.push({
-          pathname: router.pathname,
-          query: { ...router.query, step: step.toString() },
-        }, undefined, { shallow: true });
+        router.push(buildUrl(step, resolvedApplicationId));
       }
     }
-  }, [state.currentStep, state.application.completedSteps, router]);
+  }, [buildUrl, resolvedApplicationId, router, state.currentStep, state.application.completedSteps]);
 
   // Manual save function
   const saveProgress = useCallback(async () => {
@@ -317,7 +397,7 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
   // Submit application
   const submitApplication = useCallback(async () => {
     const validation = validateAllSteps(state.application);
-    
+
     if (!validation.isValid) {
       dispatch({ type: 'SET_ERRORS', payload: validation.errors });
       return;
@@ -325,8 +405,16 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
 
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      await persistApplication(
+        {
+          ...state.application,
+          currentStep: 4,
+          completedSteps: [1, 2, 3, 4],
+        },
+        resolvedApplicationId
+      );
 
-      const response = await fetch('/api/trainee/submit', {
+      const response = await fetch('/api/trainee/application', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -334,31 +422,35 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
         body: JSON.stringify({
           ...state.application,
           status: 'submitted',
-          submittedAt: new Date(),
+          currentStep: 4,
+          completedSteps: [1, 2, 3, 4],
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit application');
+        const errorPayload = await response.json().catch(() => null);
+        throw new Error(
+          errorPayload?.message ||
+          errorPayload?.error ||
+          'Failed to submit application'
+        );
       }
 
-      const result = await response.json();
-      
       // Redirect to success page
       router.push('/trainee-application?success=true');
-      
+
     } catch (error) {
       console.error('Failed to submit application:', error);
-      dispatch({ 
-        type: 'SET_ERRORS', 
-        payload: { 
-          submit: 'Failed to submit application. Please try again.' 
-        } 
+      dispatch({
+        type: 'SET_ERRORS',
+        payload: {
+          submit: 'Failed to submit application. Please try again.'
+        }
       });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [state.application, router]);
+  }, [persistApplication, resolvedApplicationId, router, state.application]);
 
   // Validation functions
   const validateStepFn = useCallback((step: number): FormValidation => {
@@ -382,11 +474,11 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
 
   // Handle URL step parameter
   useEffect(() => {
-    const urlStep = parseInt(router.query.step as string);
+    const urlStep = parseInt(searchParams?.get('step') as string);
     if (urlStep && urlStep >= 1 && urlStep <= 4 && urlStep !== state.currentStep) {
       dispatch({ type: 'SET_CURRENT_STEP', payload: urlStep });
     }
-  }, [router.query.step, state.currentStep]);
+  }, [searchParams, state.currentStep]);
 
   // Context value
   const contextValue: ApplicationContextType = {

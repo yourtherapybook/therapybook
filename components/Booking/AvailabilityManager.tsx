@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, X, Save, Trash2, AlertCircle } from 'lucide-react';
 

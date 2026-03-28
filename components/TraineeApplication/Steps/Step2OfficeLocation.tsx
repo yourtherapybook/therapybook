@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -66,6 +67,22 @@ const Step2OfficeLocation: React.FC<Step2OfficeLocationProps> = ({
   });
 
   const { formState: { errors, isValid } } = form;
+
+  useEffect(() => {
+    form.reset({
+      practiceName: data.officeLocation?.practiceName || '',
+      practiceWebsite: data.officeLocation?.practiceWebsite || '',
+      officePhone: data.officeLocation?.officePhone || '',
+      address: {
+        street: data.officeLocation?.address?.street || '',
+        addressLine2: data.officeLocation?.address?.addressLine2 || '',
+        city: data.officeLocation?.address?.city || '',
+        stateProvince: data.officeLocation?.address?.stateProvince || '',
+        zipPostalCode: data.officeLocation?.address?.zipPostalCode || '',
+        country: data.officeLocation?.address?.country || 'US',
+      },
+    });
+  }, [data.officeLocation, form]);
 
   // Auto-save form data when it changes
   useEffect(() => {

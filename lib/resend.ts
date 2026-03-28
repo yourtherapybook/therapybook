@@ -1,14 +1,87 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+const bookingUrl = `${appUrl}/booking`;
 
-export { resend };
+export type TransactionalEmailPayload = {
+  from: string;
+  to: string | string[];
+  subject: string;
+  html: string;
+};
+
+let resendClient: Resend | null = null;
+
+const getResendClient = () => {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is required to send email.');
+  }
+
+  if (!resendClient) {
+    resendClient = new Resend(apiKey);
+  }
+
+  return resendClient;
+};
+
+export const sendTransactionalEmail = async (payload: TransactionalEmailPayload) => {
+  return getResendClient().emails.send(payload);
+};
+
+export const sendVerificationEmail = async (email: string, token: string) => {
+  const verificationUrl = `${appUrl}/auth/verify?token=${encodeURIComponent(token)}`;
+
+  try {
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
+      to: email,
+      subject: 'Verify your TherapyBook account',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #FF7F50;">Verify your email address</h2>
+          <p>Welcome to TherapyBook.</p>
+          <p>Please verify your email address to activate your account and continue with secure booking and onboarding.</p>
+          <a href="${verificationUrl}" style="background: #FF7F50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 20px 0;">Verify Email</a>
+          <p style="font-size: 12px; color: #666;">This link expires in 24 hours.</p>
+        </div>
+      `
+    });
+  } catch (error) {
+    console.error('Email sending error:', error);
+    throw error;
+  }
+};
+
+export const sendPasswordReset = async (email: string, token: string) => {
+  const resetUrl = `${appUrl}/auth/reset-password?token=${encodeURIComponent(token)}`;
+
+  try {
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
+      to: email,
+      subject: 'Reset your TherapyBook password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #FF7F50;">Reset your password</h2>
+          <p>We received a request to reset your TherapyBook password.</p>
+          <a href="${resetUrl}" style="background: #FF7F50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 20px 0;">Choose New Password</a>
+          <p style="font-size: 12px; color: #666;">This link expires in 1 hour. If you did not request it, you can ignore this email.</p>
+        </div>
+      `
+    });
+  } catch (error) {
+    console.error('Email sending error:', error);
+    throw error;
+  }
+};
 
 // Email templates for trainee application
 export const sendApplicationConfirmation = async (email: string, name: string) => {
   try {
-    return await resend.emails.send({
-      from: 'TherapyBook <yourtherapybook@gmail.com>',
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
       to: email,
       subject: 'Application Received - TherapyBook Trainee Program',
       html: `
@@ -33,8 +106,8 @@ export const sendApplicationConfirmation = async (email: string, name: string) =
 
 export const sendApplicationUnderReview = async (email: string, name: string) => {
   try {
-    return await resend.emails.send({
-      from: 'TherapyBook <applications@therapybook.com>',
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
       to: email,
       subject: 'Application Under Review - TherapyBook Trainee Program',
       html: `
@@ -59,25 +132,25 @@ export const sendApplicationUnderReview = async (email: string, name: string) =>
 };
 
 export const sendApplicationStatusUpdate = async (
-  email: string, 
-  name: string, 
+  email: string,
+  name: string,
   status: 'APPROVED' | 'REJECTED'
 ) => {
-  const subject = status === 'APPROVED' 
-    ? 'Welcome to TherapyBook - Application Approved!' 
+  const subject = status === 'APPROVED'
+    ? 'Welcome to TherapyBook - Application Approved!'
     : 'TherapyBook Application Update';
-    
+
   const message = status === 'APPROVED'
     ? `Congratulations ${name}! Your trainee application has been approved. You can now log in and start accepting clients.`
     : `Thank you for your interest, ${name}. Unfortunately, we cannot approve your application at this time. Please feel free to reapply in the future.`;
 
-  const actionButton = status === 'APPROVED' 
-    ? '<a href="https://therapybook.com/login" style="background: #FF7F50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 20px 0;">Login to Your Account</a>'
+  const actionButton = status === 'APPROVED'
+    ? `<a href="${appUrl}/auth/signin" style="background: #FF7F50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 20px 0;">Login to Your Account</a>`
     : '';
 
   try {
-    return await resend.emails.send({
-      from: 'TherapyBook <applications@therapybook.com>',
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
       to: email,
       subject,
       html: `
@@ -101,16 +174,16 @@ export const sendApplicationStatusUpdate = async (
 
 // Session booking notifications
 export const sendBookingConfirmation = async (
-  email: string, 
-  clientName: string, 
-  therapistName: string, 
-  sessionDate: string, 
+  email: string,
+  clientName: string,
+  therapistName: string,
+  sessionDate: string,
   sessionTime: string,
   meetingUrl: string
 ) => {
   try {
-    return await resend.emails.send({
-      from: 'TherapyBook <bookings@therapybook.com>',
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
       to: email,
       subject: 'Session Confirmed - TherapyBook',
       html: `
@@ -141,16 +214,16 @@ export const sendBookingConfirmation = async (
 };
 
 export const sendSessionBooked = async (
-  therapistEmail: string, 
-  therapistName: string, 
+  therapistEmail: string,
+  therapistName: string,
   clientName: string,
   sessionDate: string,
   sessionTime: string,
   meetingUrl: string
 ) => {
   try {
-    return await resend.emails.send({
-      from: 'TherapyBook <sessions@therapybook.com>',
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
       to: therapistEmail,
       subject: 'New Session Booked - TherapyBook',
       html: `
@@ -180,15 +253,15 @@ export const sendSessionBooked = async (
 };
 
 export const sendSessionCancellation = async (
-  email: string, 
-  clientName: string, 
-  therapistName: string, 
+  email: string,
+  clientName: string,
+  therapistName: string,
   sessionDate: string,
   reason: string
 ) => {
   try {
-    return await resend.emails.send({
-      from: 'TherapyBook <bookings@therapybook.com>',
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
       to: email,
       subject: 'Session Cancelled - TherapyBook',
       html: `
@@ -198,7 +271,7 @@ export const sendSessionCancellation = async (
           <p>Your session with ${therapistName} on ${sessionDate} has been cancelled.</p>
           <p><strong>Reason:</strong> ${reason}</p>
           <p>Your session credit has been restored to your account. You can book a new session anytime.</p>
-          <a href="https://therapybook.com/booking" style="background: #FF7F50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Book New Session</a>
+          <a href="${bookingUrl}" style="background: #FF7F50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Book New Session</a>
           <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #666;">
             TherapyBook - Making Mental Health Care Accessible<br>
@@ -214,17 +287,17 @@ export const sendSessionCancellation = async (
 };
 
 export const sendSessionRescheduled = async (
-  email: string, 
-  clientName: string, 
-  therapistName: string, 
+  email: string,
+  clientName: string,
+  therapistName: string,
   oldDate: string,
   newDate: string,
   newTime: string,
   meetingUrl: string
 ) => {
   try {
-    return await resend.emails.send({
-      from: 'TherapyBook <bookings@therapybook.com>',
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
       to: email,
       subject: 'Session Rescheduled - TherapyBook',
       html: `
@@ -253,16 +326,16 @@ export const sendSessionRescheduled = async (
 };
 
 export const sendSessionReminder = async (
-  email: string, 
-  clientName: string, 
-  therapistName: string, 
+  email: string,
+  clientName: string,
+  therapistName: string,
   sessionTime: string,
   meetingUrl: string,
   hoursUntil: number
 ) => {
   try {
-    return await resend.emails.send({
-      from: 'TherapyBook <reminders@therapybook.com>',
+    return await sendTransactionalEmail({
+      from: 'TherapyBook <noreply@therapybook.com>',
       to: email,
       subject: `Session Reminder - ${hoursUntil}h until your appointment`,
       html: `
@@ -286,5 +359,27 @@ export const sendSessionReminder = async (
   } catch (error) {
     console.error('Email sending error:', error);
     throw error;
+  }
+};
+
+export const sendAdminApplicationAlert = async (applicantName: string, applicationId: string) => {
+  try {
+    const adminEmail = process.env.ADMIN_ALERT_EMAIL || 'admin@therapybook.com';
+
+    return await sendTransactionalEmail({
+      from: 'TherapyBook System <noreply@therapybook.com>',
+      to: adminEmail,
+      subject: `Action Required: New Trainee Application (${applicantName})`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2F3E46;">New Application Submitted</h2>
+          <p><strong>${applicantName}</strong> has just submitted a trainee application.</p>
+          <p>Please review and explicitly approve or reject the submission within the Admin extranet to unblock their onboarding flow.</p>
+          <a href="${appUrl}/admin/applications/${applicationId}" style="background: #2F3E46; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 20px 0;">Review Application</a>
+        </div>
+      `
+    });
+  } catch (error) {
+    console.error('Admin alert dispatch error:', error);
   }
 };

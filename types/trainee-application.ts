@@ -15,6 +15,7 @@ export interface TraineeApplication {
     phone?: string;
     password: string;
     confirmPassword: string;
+    requiresPassword?: boolean;
   };
   
   // Step 2: Office Location
@@ -123,6 +124,7 @@ export const createEmptyApplication = (): Partial<TraineeApplication> => ({
     phone: '',
     password: '',
     confirmPassword: '',
+    requiresPassword: true,
   },
   officeLocation: {
     practiceName: '',

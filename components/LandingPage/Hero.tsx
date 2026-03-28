@@ -14,24 +14,23 @@ const Hero: React.FC = () => {
           {/* Content */}
           <div className="mb-12 lg:mb-0">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 leading-tight">
-              Find Your Perfect{' '}
-              <span className="text-primary-500">Therapist</span>{' '}
-              Match
+              Find a Supervised{' '}
+              <span className="text-primary-500">Trainee Therapist</span>{' '}
+              Who Fits
             </h1>
             <p className="mt-6 text-xl text-neutral-600 leading-relaxed">
-              Connect with pre-licensed therapists who understand your unique needs. 
-              Start your mental health journey with personalized matching, accessible care, and no upfront fees.
+              Connect with approved trainee therapists, compare live specialties and languages, and book secure video sessions with transparent pay-per-session pricing.
             </p>
             
             {/* Key features */}
             <div className="mt-8 flex flex-wrap gap-4">
               <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-subtle">
                 <Shield className="h-5 w-5 text-primary-500" />
-                <span className="text-sm font-medium text-neutral-700">Licensed Professionals</span>
+                <span className="text-sm font-medium text-neutral-700">Approved trainee profiles</span>
               </div>
               <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-subtle">
                 <Video className="h-5 w-5 text-primary-500" />
-                <span className="text-sm font-medium text-neutral-700">Video Sessions</span>
+                <span className="text-sm font-medium text-neutral-700">Authenticated session rooms</span>
               </div>
               <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-subtle">
                 <Clock className="h-5 w-5 text-primary-500" />
@@ -72,7 +71,7 @@ const Hero: React.FC = () => {
             <div className="absolute bottom-6 -right-6 bg-white p-4 rounded-xl shadow-subtle animate-pulse delay-1000">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
-                <span className="text-sm font-medium text-neutral-700">24/7 Support</span>
+                <span className="text-sm font-medium text-neutral-700">Emergency resources</span>
               </div>
             </div>
           </div>

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useRouter } from 'next/router';
+"use client";
+import React from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import LoginModal from '../Auth/LoginModal';
 
 interface BookingButtonProps {
   variant?: 'primary' | 'secondary';
@@ -21,30 +21,16 @@ const BookingButton: React.FC<BookingButtonProps> = ({
 }) => {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const bookingDestination = '/booking';
 
   const handleBookingClick = () => {
     if (isLoading) return;
 
     if (isAuthenticated) {
-      // User is logged in, redirect to booking page
-      router.push('/booking');
+      router.push(bookingDestination);
     } else {
-      // User is not logged in, show login modal
-      setShowLoginModal(true);
+      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(bookingDestination)}`);
     }
-  };
-
-  const handleLoginSuccess = () => {
-    setShowLoginModal(false);
-    // Redirect to booking page after successful login
-    router.push('/booking');
-  };
-
-  const handleRegisterClick = () => {
-    setShowLoginModal(false);
-    // Navigate to registration page (you can create this later)
-    router.push('/register');
   };
 
   // Size variants
@@ -70,29 +56,20 @@ const BookingButton: React.FC<BookingButtonProps> = ({
   `;
 
   return (
-    <>
-      <button
-        onClick={handleBookingClick}
-        disabled={isLoading}
-        className={baseClasses}
-        aria-label="Book your therapy session"
-      >
-        {children || (
-          <>
-            <Calendar className="h-5 w-5 mr-2" />
-            Book Your Session
-            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-          </>
-        )}
-      </button>
-
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLoginSuccess={handleLoginSuccess}
-        onRegisterClick={handleRegisterClick}
-      />
-    </>
+    <button
+      onClick={handleBookingClick}
+      disabled={isLoading}
+      className={baseClasses}
+      aria-label="Book your therapy session"
+    >
+      {children || (
+        <>
+          <Calendar className="h-5 w-5 mr-2" />
+          Book Your Session
+          <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+        </>
+      )}
+    </button>
   );
 };
 

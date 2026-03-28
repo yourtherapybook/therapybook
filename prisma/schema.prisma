@@ -16,30 +16,34 @@ model User {
   firstName String
   lastName  String
   phone     String?
-  password  String?  // Made optional for OAuth users
+  password  String? // Made optional for OAuth users
   role      UserRole @default(CLIENT)
-  
+
   // NextAuth.js fields
   name          String?
   emailVerified DateTime?
   image         String?
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   traineeApplication TraineeApplication?
-  clientSessions     Session[] @relation("ClientSessions")
-  therapistSessions  Session[] @relation("TherapistSessions")
-  payments          Payment[]
+  clientSessions     Session[]               @relation("ClientSessions")
+  therapistSessions  Session[]               @relation("TherapistSessions")
+  payments           Payment[]
   availability       TherapistAvailability[] @relation("TherapistAvailability")
-  unavailableSlots   UnavailableSlot[] @relation("UnavailableSlots")
-  
+  unavailableSlots   UnavailableSlot[]       @relation("UnavailableSlots")
+
   // NextAuth.js relations
   accounts Account[]
   sessions UserSession[]
-  
+
+  // Audits & Documents (RBAC + R2 Integration)
+  auditLogs AuditLog[]
+  documents Document[] @relation("UserDocuments")
+
   @@map("users")
 }
 
@@ -83,76 +87,77 @@ model VerificationToken {
 }
 
 model TraineeApplication {
-  id            String                    @id @default(cuid())
-  userId        String                    @unique
-  status        ApplicationStatus         @default(DRAFT)
-  currentStep   Int                       @default(1)
-  completedSteps Int[]                    @default([])
-  
+  id             String            @id @default(cuid())
+  userId         String            @unique
+  status         ApplicationStatus @default(DRAFT)
+  currentStep    Int               @default(1)
+  completedSteps Int[]             @default([])
+
   // Step 1: Account Information (stored in User model)
-  
+
   // Step 2: Office Location
-  practiceName     String?
-  practiceWebsite  String?
-  officePhone      String?
-  street           String?
-  addressLine2     String?
-  city             String?
-  stateProvince    String?
-  zipPostalCode    String?
-  country          String?
-  
+  practiceName    String?
+  practiceWebsite String?
+  officePhone     String?
+  street          String?
+  addressLine2    String?
+  city            String?
+  stateProvince   String?
+  zipPostalCode   String?
+  country         String?
+
   // Step 3: Public Profile
   title                String?
-  therapistType        String?              @default("Student Intern / Trainee")
+  therapistType        String?  @default("Student Intern / Trainee")
   institutionOfStudy   String?
-  skillsAcquired       String[]            @default([])
+  skillsAcquired       String[] @default([])
   otherSkills          String?
-  specialties          String[]            @default([])
-  treatmentOrientation String[]            @default([])
-  modality             String[]            @default([])
-  ageGroups            String[]            @default([])
-  languages            String[]            @default([])
+  specialties          String[] @default([])
+  treatmentOrientation String[] @default([])
+  modality             String[] @default([])
+  ageGroups            String[] @default([])
+  languages            String[] @default([])
   otherLanguages       String?
-  ethnicitiesServed    String[]            @default([])
+  ethnicitiesServed    String[] @default([])
   personalStatement    String?
   profilePhotoUrl      String?
-  
+
   // Step 4: Agreements
-  motivationStatement        String?
-  paymentAgreement          Boolean         @default(false)
-  responseTimeAgreement     Boolean         @default(false)
-  minimumClientCommitment   Boolean         @default(false)
-  termsOfService           Boolean         @default(false)
-  
+  motivationStatement     String?
+  paymentAgreement        Boolean @default(false)
+  responseTimeAgreement   Boolean @default(false)
+  minimumClientCommitment Boolean @default(false)
+  termsOfService          Boolean @default(false)
+  rejectionReason         String?
+
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   submittedAt DateTime?
   reviewedAt  DateTime?
   approvedAt  DateTime?
-  
+
   // Relations
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   referrals Referral[]
-  
+
   @@map("trainee_applications")
 }
 
 model Referral {
-  id                   String             @id @default(cuid())
+  id                   String @id @default(cuid())
   traineeApplicationId String
   firstName            String
   lastName             String
   workEmail            String
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   traineeApplication TraineeApplication @relation(fields: [traineeApplicationId], references: [id], onDelete: Cascade)
-  
+
   @@map("referrals")
 }
 
@@ -161,102 +166,105 @@ model Session {
   clientId    String
   therapistId String
   status      SessionStatus @default(SCHEDULED)
-  
+
   // Session details
   scheduledAt DateTime
-  duration    Int           @default(50) // minutes
-  meetingUrl  String?
-  notes       String?
-  
+  duration           Int      @default(50) // minutes
+  meetingUrl         String?
+  notes              String?
+  cancellationReason String?
+  rating             Int?
+  feedback           String?
+
   // Pricing
-  price       Decimal       @db.Decimal(10, 2)
-  currency    String        @default("EUR")
-  
+  price    Decimal @db.Decimal(10, 2)
+  currency String  @default("EUR")
+
   // Timestamps
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   completedAt DateTime?
   cancelledAt DateTime?
-  
+
   // Relations
-  client    User    @relation("ClientSessions", fields: [clientId], references: [id])
-  therapist User    @relation("TherapistSessions", fields: [therapistId], references: [id])
+  client    User     @relation("ClientSessions", fields: [clientId], references: [id])
+  therapist User     @relation("TherapistSessions", fields: [therapistId], references: [id])
   payment   Payment?
-  
+
   @@map("sessions")
 }
 
 model TherapistAvailability {
-  id          String    @id @default(cuid())
+  id          String @id @default(cuid())
   therapistId String
-  
+
   // Availability details
-  dayOfWeek   Int       // 0 = Sunday, 1 = Monday, etc.
-  startTime   String    // Format: "09:00"
-  endTime     String    // Format: "17:00"
-  isActive    Boolean   @default(true)
-  
+  dayOfWeek Int // 0 = Sunday, 1 = Monday, etc.
+  startTime String // Format: "09:00"
+  endTime   String // Format: "17:00"
+  isActive  Boolean @default(true)
+
   // Date range (optional - for specific date overrides)
-  startDate   DateTime?
-  endDate     DateTime?
-  
+  startDate DateTime?
+  endDate   DateTime?
+
   // Timestamps
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  therapist   User      @relation("TherapistAvailability", fields: [therapistId], references: [id], onDelete: Cascade)
-  
+  therapist User @relation("TherapistAvailability", fields: [therapistId], references: [id], onDelete: Cascade)
+
   @@map("therapist_availability")
 }
 
 model UnavailableSlot {
-  id          String    @id @default(cuid())
+  id          String @id @default(cuid())
   therapistId String
-  
+
   // Unavailable period
   startDateTime DateTime
   endDateTime   DateTime
-  reason        String?   // "vacation", "sick", "personal", etc.
-  
+  reason        String? // "vacation", "sick", "personal", etc.
+
   // Timestamps
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  therapist   User      @relation("UnavailableSlots", fields: [therapistId], references: [id], onDelete: Cascade)
-  
+  therapist User @relation("UnavailableSlots", fields: [therapistId], references: [id], onDelete: Cascade)
+
   @@map("unavailable_slots")
 }
 
 model Payment {
-  id        String        @id @default(cuid())
+  id        String  @id @default(cuid())
   userId    String
-  sessionId String?       @unique
-  
+  sessionId String? @unique
+
   // Payment details
-  amount          Decimal       @db.Decimal(10, 2)
-  currency        String        @default("EUR")
-  status          PaymentStatus @default(PENDING)
-  paymentMethod   String?       // stripe, paypal, etc.
-  
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("EUR")
+  status        PaymentStatus @default(PENDING)
+  paymentMethod String? // stripe, paypal, etc.
+
   // External references
-  stripePaymentId String?       @unique
-  paypalOrderId   String?       @unique
-  
+  stripePaymentId String? @unique
+  paypalOrderId   String? @unique
+
   // Metadata
-  description     String?
-  receiptUrl      String?
-  
+  description String?
+  receiptUrl  String?
+
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   processedAt DateTime?
-  
+
   // Relations
   user    User     @relation(fields: [userId], references: [id])
   session Session? @relation(fields: [sessionId], references: [id])
-  
+
   @@map("payments")
 }
 
@@ -264,6 +272,7 @@ model Payment {
 enum UserRole {
   CLIENT
   TRAINEE
+  SUPERVISOR
   ADMIN
 }
 
@@ -289,4 +298,63 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
+}
+
+// Enterprise RBAC & Compliance
+
+model AuditLog {
+  id         String  @id @default(cuid())
+  userId     String? // The user who performed the action (nullable for system events)
+  action     String // e.g., "DOCUMENT_UPLOADED", "ROLE_CHANGED", "SESSION_SCHEDULED"
+  entityId   String
+  entityType String
+  details    Json? // Store payload (before/after states) for GoBD compliance
+  ipAddress  String?
+  userAgent  String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityId, entityType])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model Document {
+  id       String       @id @default(cuid())
+  userId   String
+  title    String
+  type     DocumentType
+  r2Key    String       @unique // The deterministic Cloudflare R2 path
+  size     Int // in bytes
+  mimeType String
+
+  // Status tracking
+  status DocumentStatus @default(PENDING) // PENDING, VERIFIED, REJECTED
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("documents")
+}
+
+enum DocumentType {
+  CERTIFICATION
+  IDENTIFICATION
+  PROFILE_PHOTO
+  CLINICAL_NOTE
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }

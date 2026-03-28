@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -79,6 +80,17 @@ const Step4Agreements: React.FC<Step4AgreementsProps> = ({
 
   const { watch, formState: { errors, isValid } } = form;
   const watchedValues = watch();
+
+  useEffect(() => {
+    form.reset({
+      motivationStatement: data.agreements?.motivationStatement || '',
+      paymentAgreement: data.agreements?.paymentAgreement || false,
+      responseTimeAgreement: data.agreements?.responseTimeAgreement || false,
+      minimumClientCommitment: data.agreements?.minimumClientCommitment || false,
+      termsOfService: data.agreements?.termsOfService || false,
+      referrals: data.agreements?.referrals || [],
+    });
+  }, [data.agreements, form]);
 
   // Update character count for motivation statement
   useEffect(() => {
@@ -332,7 +344,7 @@ const Step4Agreements: React.FC<Step4AgreementsProps> = ({
                                 </section>
                                 <section>
                                   <h4 className="font-semibold mb-2">4. Client Confidentiality</h4>
-                                  <p>You must maintain strict client confidentiality and comply with HIPAA and other applicable privacy regulations.</p>
+                                  <p>You must maintain strict client confidentiality and comply with GDPR, BDSG, and any other privacy or professional-conduct rules that apply in your jurisdiction.</p>
                                 </section>
                                 <section>
                                   <h4 className="font-semibold mb-2">5. Platform Fees</h4>

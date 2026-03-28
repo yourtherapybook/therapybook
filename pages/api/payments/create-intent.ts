@@ -1,14 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '../../../lib/prisma';
-import { authenticateUser } from '../../../lib/auth-middleware';
 import { z } from 'zod';
+import { authenticateUser } from '../../../lib/auth-middleware';
+import { createStripeCheckoutSession } from '../../../lib/payments/stripe';
+import { prisma } from '../../../lib/prisma';
 
-const paymentIntentSchema = z.object({
-  amount: z.number().positive('Amount must be positive'),
-  currency: z.string().default('EUR'),
-  sessionId: z.string().cuid().optional(),
-  description: z.string().optional(),
-  paymentMethod: z.enum(['stripe', 'paypal']).default('stripe'),
+const checkoutSchema = z.object({
+  paymentId: z.string().cuid('Invalid payment ID'),
 });
 
 export default async function handler(
@@ -21,55 +18,77 @@ export default async function handler(
 
   try {
     const user = await authenticateUser(req, res);
-    
+
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const validatedData = paymentIntentSchema.parse(req.body);
-    
-    // Create payment record
-    const payment = await prisma.payment.create({
-      data: {
+    const { paymentId } = checkoutSchema.parse(req.body);
+
+    const payment = await prisma.payment.findFirst({
+      where: {
+        id: paymentId,
         userId: user.id,
-        sessionId: validatedData.sessionId,
-        amount: validatedData.amount,
-        currency: validatedData.currency,
-        status: 'PENDING',
-        paymentMethod: validatedData.paymentMethod,
-        description: validatedData.description || 'TherapyBook session payment',
+      },
+      include: {
+        session: {
+          include: {
+            therapist: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    // In a real implementation, you would create a Stripe PaymentIntent here
-    // For now, we'll return a mock response
-    const mockPaymentIntent = {
-      id: `pi_mock_${payment.id}`,
-      client_secret: `pi_mock_${payment.id}_secret_${Math.random().toString(36).substring(7)}`,
-      amount: validatedData.amount * 100, // Stripe uses cents
-      currency: validatedData.currency.toLowerCase(),
-      status: 'requires_payment_method',
-    };
+    if (!payment || !payment.session) {
+      return res.status(404).json({ error: 'Pending booking payment not found' });
+    }
 
-    // Update payment with external ID
-    await prisma.payment.update({
+    if (payment.status !== 'PENDING') {
+      return res.status(400).json({ error: 'This payment is no longer awaiting checkout' });
+    }
+
+    const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const therapistName = `${payment.session.therapist.firstName} ${payment.session.therapist.lastName}`.trim();
+    const checkoutSession = await createStripeCheckoutSession({
+      amountCents: Math.round(Number(payment.amount) * 100),
+      currency: payment.currency,
+      customerEmail: user.email,
+      successUrl: `${appUrl}/booking?status=success&checkoutSessionId={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl}/booking?status=cancelled&therapistId=${encodeURIComponent(payment.session.therapistId)}`,
+      description: payment.description || `Therapy session with ${therapistName}`,
+      metadata: {
+        paymentId: payment.id,
+        sessionId: payment.session.id,
+        userId: user.id,
+      },
+    });
+
+    const updatedPayment = await prisma.payment.update({
       where: { id: payment.id },
       data: {
-        stripePaymentId: mockPaymentIntent.id,
+        status: 'PROCESSING',
+        stripePaymentId: checkoutSession.id,
       },
     });
 
-    res.status(201).json({ 
-      payment,
-      paymentIntent: mockPaymentIntent,
-      message: 'Payment intent created successfully' 
+    return res.status(201).json({
+      payment: updatedPayment,
+      checkoutUrl: checkoutSession.url,
+      checkoutSessionId: checkoutSession.id,
+      message: 'Checkout session created successfully',
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Validation error', details: error.issues });
     }
-    
-    console.error('Payment intent creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+
+    console.error('Checkout session creation error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return res.status(message === 'Stripe is not configured.' ? 503 : 500).json({ error: message });
   }
 }

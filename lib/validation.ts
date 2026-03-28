@@ -10,13 +10,49 @@ export const accountInfoSchema = z.object({
     if (!phone) return true;
     return /^[\+]?[1-9][\d]{0,15}$/.test(phone.replace(/\s/g, ''));
   }, 'Please enter a valid phone number'),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  password: z.string().optional(),
+  confirmPassword: z.string().optional(),
+  requiresPassword: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  const requiresPassword = data.requiresPassword !== false;
+  const password = data.password || '';
+  const confirmPassword = data.confirmPassword || '';
+
+  if (!requiresPassword && !password && !confirmPassword) {
+    return;
+  }
+
+  if (password.length < 8) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['password'],
+      message: 'Password must be at least 8 characters',
+    });
+  }
+
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['password'],
+      message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+    });
+  }
+
+  if (!confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['confirmPassword'],
+      message: 'Please confirm your password',
+    });
+  }
+
+  if (password !== confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['confirmPassword'],
+      message: "Passwords don't match",
+    });
+  }
 });
 
 export const officeLocationSchema = z.object({

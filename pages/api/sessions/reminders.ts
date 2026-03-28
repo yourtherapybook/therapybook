@@ -10,10 +10,16 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const authHeader = req.headers.authorization;
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ error: 'Unauthorized cron invocation' });
+  }
+
   try {
     // This endpoint would typically be called by a cron job or scheduled task
     const now = new Date();
-    
+    const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
     // Find sessions that need 24-hour reminders
     const sessions24h = await prisma.session.findMany({
       where: {
@@ -88,7 +94,7 @@ export default async function handler(
           `${session.client.firstName} ${session.client.lastName}`,
           `${session.therapist.firstName} ${session.therapist.lastName}`,
           sessionTime,
-          session.meetingUrl || `https://therapybook.com/session/${session.id}`,
+          session.meetingUrl || `${appUrl}/session/${session.id}`,
           24
         );
 
@@ -123,7 +129,7 @@ export default async function handler(
           `${session.client.firstName} ${session.client.lastName}`,
           `${session.therapist.firstName} ${session.therapist.lastName}`,
           sessionTime,
-          session.meetingUrl || `https://therapybook.com/session/${session.id}`,
+          session.meetingUrl || `${appUrl}/session/${session.id}`,
           1
         );
 

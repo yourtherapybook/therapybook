@@ -1,14 +1,24 @@
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  skipWaiting: true,
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
-  // Preserve existing optimizations
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      {
+        hostname: 'localhost',
+      },
+    ],
   },
+  turbopack: {},
 }
 
-module.exports = nextConfig
+module.exports = withPWA(nextConfig);

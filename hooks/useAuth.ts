@@ -33,11 +33,16 @@ export const useAuth = () => {
     isLoading: status === 'loading'
   }
 
-  const login = async (email: string, password: string) => {
+  const login = async (
+    email: string,
+    password: string,
+    options?: { callbackUrl?: string }
+  ) => {
     try {
       const result = await signIn('credentials', {
         email,
         password,
+        callbackUrl: options?.callbackUrl,
         redirect: false
       })
       
@@ -61,13 +66,19 @@ export const useAuth = () => {
     }
   }
 
-  const register = async (userData: {
-    email: string
-    password: string
-    firstName: string
-    lastName: string
-    phone?: string
-  }) => {
+  const register = async (
+    userData: {
+      email: string
+      password: string
+      firstName: string
+      lastName: string
+      phone?: string
+    },
+    options?: {
+      autoLogin?: boolean
+      callbackUrl?: string
+    }
+  ) => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -79,13 +90,16 @@ export const useAuth = () => {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Registration failed')
+        throw new Error(error.error || error.message || 'Registration failed')
       }
 
       const result = await response.json()
-      
-      // Auto-login after successful registration
-      await login(userData.email, userData.password)
+
+      if (options?.autoLogin) {
+        await login(userData.email, userData.password, {
+          callbackUrl: options.callbackUrl
+        })
+      }
       
       return result
     } catch (error) {

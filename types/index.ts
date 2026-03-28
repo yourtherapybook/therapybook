@@ -2,13 +2,18 @@ export interface Therapist {
   id: string;
   name: string;
   credentials: string;
-  image: string;
+  image?: string;
+  institutionOfStudy?: string;
+  skillsAcquired?: string[];
   specializations: string[];
+  treatmentOrientation?: string[];
+  modality?: string[];
+  ageGroups?: string[];
   languages: string[];
   hourlyRate: number;
   availability: 'available' | 'busy' | 'offline';
-  rating: number;
-  reviewCount: number;
+  rating?: number;
+  reviewCount?: number;
   bio: string;
 }
 
@@ -38,6 +43,5 @@ export interface MatchingResult {
 export interface FilterOptions {
   issueTypes: string[];
   languages: string[];
-  priceRange: [number, number];
   availability: string[];
 }

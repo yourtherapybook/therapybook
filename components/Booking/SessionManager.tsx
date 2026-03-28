@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import { Calendar, Clock, X, Edit, AlertTriangle, CheckCircle } from 'lucide-react';
 import SessionScheduler from './SessionScheduler';

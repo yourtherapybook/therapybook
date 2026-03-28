@@ -1,16 +1,26 @@
+import { ApplicationStatus, Prisma } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '../../../lib/prisma';
-import { authenticateUser } from '../../../lib/auth-middleware';
 import { z } from 'zod';
+import { authenticateUser } from '../../../lib/auth-middleware';
+import { prisma } from '../../../lib/prisma';
+import {
+  sendAdminApplicationAlert,
+  sendApplicationConfirmation,
+  sendApplicationUnderReview,
+} from '../../../lib/resend';
 
-// Schema for the nested application data structure
+const referralSchema = z.object({
+  id: z.string(),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  workEmail: z.string().email('Invalid email format'),
+});
+
 const applicationUpdateSchema = z.object({
   id: z.string().optional(),
   status: z.enum(['draft', 'submitted', 'under_review', 'approved', 'rejected']).optional(),
   currentStep: z.number().min(1).max(4).optional(),
-  completedSteps: z.array(z.number()).optional(),
-  
-  // Step 1: Account Information (handled separately in user table)
+  completedSteps: z.array(z.number().min(1).max(4)).optional(),
   accountInfo: z.object({
     firstName: z.string().optional(),
     lastName: z.string().optional(),
@@ -18,9 +28,8 @@ const applicationUpdateSchema = z.object({
     phone: z.string().optional(),
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
+    requiresPassword: z.boolean().optional(),
   }).optional(),
-  
-  // Step 2: Office Location
   officeLocation: z.object({
     practiceName: z.string().optional(),
     practiceWebsite: z.string().optional(),
@@ -34,8 +43,6 @@ const applicationUpdateSchema = z.object({
       country: z.string().optional(),
     }).optional(),
   }).optional(),
-  
-  // Step 3: Public Profile
   publicProfile: z.object({
     title: z.string().optional(),
     therapistType: z.string().optional(),
@@ -52,22 +59,159 @@ const applicationUpdateSchema = z.object({
     personalStatement: z.string().optional(),
     profilePhotoUrl: z.string().optional(),
   }).optional(),
-  
-  // Step 4: Agreements
   agreements: z.object({
     motivationStatement: z.string().optional(),
     paymentAgreement: z.boolean().optional(),
     responseTimeAgreement: z.boolean().optional(),
     minimumClientCommitment: z.boolean().optional(),
     termsOfService: z.boolean().optional(),
-    referrals: z.array(z.object({
-      id: z.string(),
-      firstName: z.string(),
-      lastName: z.string(),
-      workEmail: z.string().email(),
-    })).optional(),
+    referrals: z.array(referralSchema).optional(),
   }).optional(),
 });
+
+const applicationInclude = {
+  referrals: {
+    orderBy: { createdAt: 'asc' as const },
+  },
+  user: {
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+    },
+  },
+} satisfies Prisma.TraineeApplicationInclude;
+
+const mapStatus = (status?: string): ApplicationStatus | undefined => {
+  if (!status) return undefined;
+
+  const normalized = status.toUpperCase();
+  if (
+    normalized === 'DRAFT' ||
+    normalized === 'SUBMITTED' ||
+    normalized === 'UNDER_REVIEW' ||
+    normalized === 'APPROVED' ||
+    normalized === 'REJECTED'
+  ) {
+    return normalized as ApplicationStatus;
+  }
+
+  return undefined;
+};
+
+class SubmissionValidationError extends Error {
+  missingFields: string[];
+
+  constructor(missingFields: string[]) {
+    super('Application incomplete');
+    this.missingFields = missingFields;
+  }
+}
+
+const getSubmissionMissingFields = (
+  application: Prisma.TraineeApplicationGetPayload<{ include: typeof applicationInclude }>
+) => {
+  const missingFields: string[] = [];
+
+  const requiredFields: Array<[keyof typeof application, string]> = [
+    ['practiceName', 'practiceName'],
+    ['street', 'street'],
+    ['city', 'city'],
+    ['stateProvince', 'stateProvince'],
+    ['zipPostalCode', 'zipPostalCode'],
+    ['country', 'country'],
+    ['title', 'title'],
+    ['institutionOfStudy', 'institutionOfStudy'],
+    ['personalStatement', 'personalStatement'],
+    ['motivationStatement', 'motivationStatement'],
+  ];
+
+  requiredFields.forEach(([key, fieldName]) => {
+    if (!application[key]) {
+      missingFields.push(fieldName);
+    }
+  });
+
+  if (application.paymentAgreement !== true) missingFields.push('paymentAgreement');
+  if (application.responseTimeAgreement !== true) missingFields.push('responseTimeAgreement');
+  if (application.minimumClientCommitment !== true) missingFields.push('minimumClientCommitment');
+  if (application.termsOfService !== true) missingFields.push('termsOfService');
+
+  if (!application.user.firstName) missingFields.push('firstName');
+  if (!application.user.lastName) missingFields.push('lastName');
+  if (!application.user.email) missingFields.push('email');
+
+  return missingFields;
+};
+
+const toApplicationResponse = (
+  application: Prisma.TraineeApplicationGetPayload<{ include: typeof applicationInclude }>
+) => {
+  return {
+    id: application.id,
+    status: application.status.toLowerCase(),
+    currentStep: application.currentStep || 1,
+    completedSteps: application.completedSteps || [],
+    createdAt: application.createdAt,
+    updatedAt: application.updatedAt,
+    submittedAt: application.submittedAt,
+    reviewedAt: application.reviewedAt,
+    approvedAt: application.approvedAt,
+    rejectionReason: application.rejectionReason,
+    accountInfo: {
+      firstName: application.user.firstName,
+      lastName: application.user.lastName,
+      email: application.user.email,
+      phone: application.user.phone || '',
+      password: '',
+      confirmPassword: '',
+      requiresPassword: false,
+    },
+    officeLocation: {
+      practiceName: application.practiceName || '',
+      practiceWebsite: application.practiceWebsite || '',
+      officePhone: application.officePhone || '',
+      address: {
+        street: application.street || '',
+        addressLine2: application.addressLine2 || '',
+        city: application.city || '',
+        stateProvince: application.stateProvince || '',
+        zipPostalCode: application.zipPostalCode || '',
+        country: application.country || 'US',
+      },
+    },
+    publicProfile: {
+      title: application.title || '',
+      therapistType: 'Student Intern / Trainee',
+      institutionOfStudy: application.institutionOfStudy || '',
+      skillsAcquired: application.skillsAcquired || [],
+      otherSkills: application.otherSkills || '',
+      specialties: application.specialties || [],
+      treatmentOrientation: application.treatmentOrientation || [],
+      modality: application.modality || [],
+      ageGroups: application.ageGroups || [],
+      languages: application.languages || [],
+      otherLanguages: application.otherLanguages || '',
+      ethnicitiesServed: application.ethnicitiesServed || [],
+      personalStatement: application.personalStatement || '',
+      profilePhotoUrl: application.profilePhotoUrl || '',
+    },
+    agreements: {
+      motivationStatement: application.motivationStatement || '',
+      paymentAgreement: application.paymentAgreement || false,
+      responseTimeAgreement: application.responseTimeAgreement || false,
+      minimumClientCommitment: application.minimumClientCommitment || false,
+      termsOfService: application.termsOfService || false,
+      referrals: application.referrals.map((referral) => ({
+        id: referral.id,
+        firstName: referral.firstName,
+        lastName: referral.lastName,
+        workEmail: referral.workEmail,
+      })),
+    },
+  };
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -75,217 +219,270 @@ export default async function handler(
 ) {
   try {
     const user = await authenticateUser(req, res);
-    
+
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     if (req.method === 'GET') {
-      // Get trainee application by ID or user ID
       const { id } = req.query;
-      
-      let application;
-      if (id && typeof id === 'string') {
-        application = await prisma.traineeApplication.findUnique({
-          where: { id },
-          include: {
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-                phone: true,
-              },
-            },
-          },
-        });
-      } else {
-        application = await prisma.traineeApplication.findUnique({
-          where: { userId: user.id },
-          include: {
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-                phone: true,
-              },
-            },
-          },
-        });
-      }
+      const where =
+        id && typeof id === 'string'
+          ? { id }
+          : { userId: user.id };
+
+      const application = await prisma.traineeApplication.findFirst({
+        where: {
+          ...where,
+          ...(id && typeof id === 'string' && user.role !== 'ADMIN' ? { userId: user.id } : {}),
+        },
+        include: applicationInclude,
+      });
 
       if (!application) {
         return res.status(404).json({ error: 'Application not found' });
       }
 
-      // Transform the data to match our new structure
-      const transformedApplication = {
-        id: application.id,
-        status: application.status.toLowerCase(),
-        currentStep: application.currentStep || 1,
-        completedSteps: application.completedSteps || [],
-        createdAt: application.createdAt,
-        updatedAt: application.updatedAt,
-        submittedAt: application.submittedAt,
-        
-        accountInfo: {
-          firstName: application.user.firstName,
-          lastName: application.user.lastName,
-          email: application.user.email,
-          phone: application.user.phone || '',
-          password: '', // Never send password
-          confirmPassword: '',
-        },
-        
-        officeLocation: {
-          practiceName: application.practiceName || '',
-          practiceWebsite: application.practiceWebsite || '',
-          officePhone: application.officePhone || '',
-          address: {
-            street: application.street || '',
-            addressLine2: application.addressLine2 || '',
-            city: application.city || '',
-            stateProvince: application.stateProvince || '',
-            zipPostalCode: application.zipPostalCode || '',
-            country: application.country || 'US',
-          },
-        },
-        
-        publicProfile: {
-          title: application.title || '',
-          therapistType: 'Student Intern / Trainee',
-          institutionOfStudy: application.institutionOfStudy || '',
-          skillsAcquired: application.skillsAcquired || [],
-          otherSkills: application.otherSkills || '',
-          specialties: application.specialties || [],
-          treatmentOrientation: application.treatmentOrientation || [],
-          modality: application.modality || [],
-          ageGroups: application.ageGroups || [],
-          languages: application.languages || [],
-          otherLanguages: application.otherLanguages || '',
-          ethnicitiesServed: application.ethnicitiesServed || [],
-          personalStatement: application.personalStatement || '',
-          profilePhotoUrl: application.profilePhotoUrl || '',
-        },
-        
-        agreements: {
-          motivationStatement: application.motivationStatement || '',
-          paymentAgreement: application.paymentAgreement || false,
-          responseTimeAgreement: application.responseTimeAgreement || false,
-          minimumClientCommitment: application.minimumClientCommitment || false,
-          termsOfService: application.termsOfService || false,
-          referrals: [],
-        },
-      };
+      return res.status(200).json(toApplicationResponse(application));
+    }
 
-      res.status(200).json(transformedApplication);
-    } else if (req.method === 'POST') {
-      // Create or update trainee application (auto-save functionality)
+    if (req.method === 'POST') {
       const validatedData = applicationUpdateSchema.parse(req.body);
-      
-      // Flatten the nested structure for database storage
-      const flatData: any = {
-        currentStep: validatedData.currentStep,
-        completedSteps: validatedData.completedSteps,
-        status: validatedData.status?.toUpperCase() || 'DRAFT',
-      };
+      const normalizedEmail = validatedData.accountInfo?.email?.trim().toLowerCase();
 
-      // Handle office location data
-      if (validatedData.officeLocation) {
-        const { officeLocation } = validatedData;
-        flatData.practiceName = officeLocation.practiceName;
-        flatData.practiceWebsite = officeLocation.practiceWebsite;
-        flatData.officePhone = officeLocation.officePhone;
-        
-        if (officeLocation.address) {
-          flatData.street = officeLocation.address.street;
-          flatData.addressLine2 = officeLocation.address.addressLine2;
-          flatData.city = officeLocation.address.city;
-          flatData.stateProvince = officeLocation.address.stateProvince;
-          flatData.zipPostalCode = officeLocation.address.zipPostalCode;
-          flatData.country = officeLocation.address.country;
+      if (validatedData.id) {
+        const existingById = await prisma.traineeApplication.findUnique({
+          where: { id: validatedData.id },
+          select: { userId: true },
+        });
+
+        if (!existingById || (existingById.userId !== user.id && user.role !== 'ADMIN')) {
+          return res.status(403).json({ error: 'Forbidden' });
         }
       }
 
-      // Handle public profile data
+      if (normalizedEmail) {
+        const existingEmailUser = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          select: { id: true },
+        });
+
+        if (existingEmailUser && existingEmailUser.id !== user.id) {
+          return res.status(400).json({ error: 'Another account already uses that email address' });
+        }
+      }
+
+      const updateData: Prisma.TraineeApplicationUncheckedUpdateInput = {};
+      const createData: Prisma.TraineeApplicationUncheckedCreateInput = {
+        userId: user.id,
+      };
+      const applicationStatus = mapStatus(validatedData.status);
+      const isSubmitting = applicationStatus === 'SUBMITTED';
+
+      if (validatedData.currentStep !== undefined) {
+        updateData.currentStep = validatedData.currentStep;
+        createData.currentStep = validatedData.currentStep;
+      }
+
+      if (validatedData.completedSteps !== undefined) {
+        updateData.completedSteps = validatedData.completedSteps;
+        createData.completedSteps = validatedData.completedSteps;
+      }
+
+      if (applicationStatus && applicationStatus !== 'SUBMITTED') {
+        updateData.status = applicationStatus;
+        createData.status = applicationStatus;
+      }
+
+      if (validatedData.officeLocation) {
+        const { officeLocation } = validatedData;
+        updateData.practiceName = officeLocation.practiceName;
+        updateData.practiceWebsite = officeLocation.practiceWebsite;
+        updateData.officePhone = officeLocation.officePhone;
+        updateData.street = officeLocation.address?.street;
+        updateData.addressLine2 = officeLocation.address?.addressLine2;
+        updateData.city = officeLocation.address?.city;
+        updateData.stateProvince = officeLocation.address?.stateProvince;
+        updateData.zipPostalCode = officeLocation.address?.zipPostalCode;
+        updateData.country = officeLocation.address?.country;
+        createData.practiceName = officeLocation.practiceName;
+        createData.practiceWebsite = officeLocation.practiceWebsite;
+        createData.officePhone = officeLocation.officePhone;
+        createData.street = officeLocation.address?.street;
+        createData.addressLine2 = officeLocation.address?.addressLine2;
+        createData.city = officeLocation.address?.city;
+        createData.stateProvince = officeLocation.address?.stateProvince;
+        createData.zipPostalCode = officeLocation.address?.zipPostalCode;
+        createData.country = officeLocation.address?.country;
+      }
+
       if (validatedData.publicProfile) {
         const { publicProfile } = validatedData;
-        flatData.title = publicProfile.title;
-        flatData.institutionOfStudy = publicProfile.institutionOfStudy;
-        flatData.skillsAcquired = publicProfile.skillsAcquired;
-        flatData.otherSkills = publicProfile.otherSkills;
-        flatData.specialties = publicProfile.specialties;
-        flatData.treatmentOrientation = publicProfile.treatmentOrientation;
-        flatData.modality = publicProfile.modality;
-        flatData.ageGroups = publicProfile.ageGroups;
-        flatData.languages = publicProfile.languages;
-        flatData.otherLanguages = publicProfile.otherLanguages;
-        flatData.ethnicitiesServed = publicProfile.ethnicitiesServed;
-        flatData.personalStatement = publicProfile.personalStatement;
-        flatData.profilePhotoUrl = publicProfile.profilePhotoUrl;
+        updateData.title = publicProfile.title;
+        updateData.therapistType = publicProfile.therapistType;
+        updateData.institutionOfStudy = publicProfile.institutionOfStudy;
+        updateData.skillsAcquired = publicProfile.skillsAcquired;
+        updateData.otherSkills = publicProfile.otherSkills;
+        updateData.specialties = publicProfile.specialties;
+        updateData.treatmentOrientation = publicProfile.treatmentOrientation;
+        updateData.modality = publicProfile.modality;
+        updateData.ageGroups = publicProfile.ageGroups;
+        updateData.languages = publicProfile.languages;
+        updateData.otherLanguages = publicProfile.otherLanguages;
+        updateData.ethnicitiesServed = publicProfile.ethnicitiesServed;
+        updateData.personalStatement = publicProfile.personalStatement;
+        updateData.profilePhotoUrl = publicProfile.profilePhotoUrl;
+        createData.title = publicProfile.title;
+        createData.therapistType = publicProfile.therapistType;
+        createData.institutionOfStudy = publicProfile.institutionOfStudy;
+        createData.skillsAcquired = publicProfile.skillsAcquired;
+        createData.otherSkills = publicProfile.otherSkills;
+        createData.specialties = publicProfile.specialties;
+        createData.treatmentOrientation = publicProfile.treatmentOrientation;
+        createData.modality = publicProfile.modality;
+        createData.ageGroups = publicProfile.ageGroups;
+        createData.languages = publicProfile.languages;
+        createData.otherLanguages = publicProfile.otherLanguages;
+        createData.ethnicitiesServed = publicProfile.ethnicitiesServed;
+        createData.personalStatement = publicProfile.personalStatement;
+        createData.profilePhotoUrl = publicProfile.profilePhotoUrl;
       }
 
-      // Handle agreements data
       if (validatedData.agreements) {
         const { agreements } = validatedData;
-        flatData.motivationStatement = agreements.motivationStatement;
-        flatData.paymentAgreement = agreements.paymentAgreement;
-        flatData.responseTimeAgreement = agreements.responseTimeAgreement;
-        flatData.minimumClientCommitment = agreements.minimumClientCommitment;
-        flatData.termsOfService = agreements.termsOfService;
+        updateData.motivationStatement = agreements.motivationStatement;
+        updateData.paymentAgreement = agreements.paymentAgreement;
+        updateData.responseTimeAgreement = agreements.responseTimeAgreement;
+        updateData.minimumClientCommitment = agreements.minimumClientCommitment;
+        updateData.termsOfService = agreements.termsOfService;
+        createData.motivationStatement = agreements.motivationStatement;
+        createData.paymentAgreement = agreements.paymentAgreement;
+        createData.responseTimeAgreement = agreements.responseTimeAgreement;
+        createData.minimumClientCommitment = agreements.minimumClientCommitment;
+        createData.termsOfService = agreements.termsOfService;
       }
 
-      // Update user info if provided
-      if (validatedData.accountInfo) {
-        const { accountInfo } = validatedData;
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            firstName: accountInfo.firstName,
-            lastName: accountInfo.lastName,
-            email: accountInfo.email,
-            phone: accountInfo.phone,
+      const savedApplication = await prisma.$transaction(async (tx) => {
+        if (validatedData.accountInfo) {
+          await tx.user.update({
+            where: { id: user.id },
+            data: {
+              firstName: validatedData.accountInfo.firstName,
+              lastName: validatedData.accountInfo.lastName,
+              email: normalizedEmail,
+              phone: validatedData.accountInfo.phone,
+            },
+          });
+        }
+
+        const application = await tx.traineeApplication.upsert({
+          where: { userId: user.id },
+          update: {
+            ...updateData,
+          },
+          create: {
+            ...createData,
           },
         });
+
+        if (validatedData.agreements?.referrals) {
+          await tx.referral.deleteMany({
+            where: { traineeApplicationId: application.id },
+          });
+
+          if (validatedData.agreements.referrals.length > 0) {
+            await tx.referral.createMany({
+              data: validatedData.agreements.referrals.map((referral) => ({
+                traineeApplicationId: application.id,
+                firstName: referral.firstName,
+                lastName: referral.lastName,
+                workEmail: referral.workEmail.trim().toLowerCase(),
+              })),
+            });
+          }
+        }
+
+        const applicationWithRelations = await tx.traineeApplication.findUniqueOrThrow({
+          where: { id: application.id },
+          include: applicationInclude,
+        });
+
+        if (!isSubmitting) {
+          return applicationWithRelations;
+        }
+
+        if (applicationWithRelations.status !== 'DRAFT') {
+          throw new Error('Application has already been submitted');
+        }
+
+        const missingFields = getSubmissionMissingFields(applicationWithRelations);
+
+        if (missingFields.length > 0) {
+          throw new SubmissionValidationError(missingFields);
+        }
+
+        await tx.traineeApplication.update({
+          where: { id: application.id },
+          data: {
+            status: 'SUBMITTED',
+            submittedAt: applicationWithRelations.submittedAt || new Date(),
+            currentStep: 4,
+            completedSteps: [1, 2, 3, 4],
+          },
+        });
+
+        return tx.traineeApplication.findUniqueOrThrow({
+          where: { id: application.id },
+          include: applicationInclude,
+        });
+      });
+
+      if (isSubmitting) {
+        const applicantName = `${savedApplication.user.firstName} ${savedApplication.user.lastName}`.trim();
+
+        try {
+          await sendApplicationConfirmation(savedApplication.user.email, applicantName);
+          await sendApplicationUnderReview(savedApplication.user.email, applicantName);
+          await sendAdminApplicationAlert(applicantName, savedApplication.id);
+        } catch (emailError) {
+          console.error('Application submission email error:', emailError);
+        }
       }
 
-      const application = await prisma.traineeApplication.upsert({
-        where: { userId: user.id },
-        update: flatData,
-        create: {
-          userId: user.id,
-          ...flatData,
-        },
-        include: {
-          user: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-            },
-          },
-        },
+      return res.status(200).json({
+        ...toApplicationResponse(savedApplication),
+        message: isSubmitting
+          ? 'Application submitted successfully'
+          : 'Application saved successfully',
       });
-
-      // Handle referrals if provided (TODO: implement referrals table)
-      // For now, referrals are not persisted to database
-
-      res.status(200).json({ 
-        id: application.id,
-        message: 'Application saved successfully',
-        updatedAt: application.updatedAt 
-      });
-    } else {
-      res.status(405).json({ error: 'Method not allowed' });
     }
+
+    return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Validation error', details: error.issues });
     }
-    
+
+    if (error instanceof SubmissionValidationError) {
+      return res.status(400).json({
+        error: 'Application incomplete',
+        missingFields: error.missingFields,
+        message: 'Please complete all required fields before submitting',
+      });
+    }
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return res.status(400).json({ error: 'This information is already in use' });
+    }
+
+    if (error instanceof Error && error.message === 'Application has already been submitted') {
+      return res.status(400).json({ error: error.message });
+    }
+
     console.error('Trainee application API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

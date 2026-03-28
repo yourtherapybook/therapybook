@@ -1,3 +1,4 @@
+"use client";
 // Shadcn/ui Components - TherapyBook Integration
 // All components are customized to match TherapyBook design system
 
@@ -5,15 +6,15 @@ export { Button, buttonVariants, type ButtonProps } from './button';
 export { Input } from './input';
 export { Textarea } from './textarea';
 export { Checkbox } from './checkbox';
-export { 
-  Form, 
-  FormItem, 
-  FormLabel, 
-  FormControl, 
-  FormDescription, 
-  FormMessage, 
+export {
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
   FormField,
-  useFormField 
+  useFormField
 } from './form';
 export { Label } from './label';
 export {
@@ -29,7 +30,7 @@ export {
   SelectScrollDownButton,
 } from './select';
 export { MultiSelect } from './multi-select';
-export { FileUpload } from './file-upload';
+
 export {
   Dialog,
   DialogPortal,
@@ -52,15 +53,12 @@ export {
   TableCell,
   TableCaption,
 } from './table';
-export { 
-  Card, 
-  CardHeader, 
-  CardFooter, 
-  CardTitle, 
-  CardDescription, 
-  CardContent 
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent
 } from './card';
 export { Badge, badgeVariants, type BadgeProps } from './badge';
-
-// Demo component for testing integration
-export { TherapyBookDemo } from './therapybook-demo';

@@ -1,38 +1,65 @@
 import React from 'react';
-import { Shield, Lock, Phone, ExternalLink, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarClock, FileCheck2, Lock, Phone } from 'lucide-react';
 
 interface TrustBadgesProps {
   variant?: 'header' | 'footer' | 'inline';
   showAll?: boolean;
 }
 
+const emergencyNumber = '112';
+
 const TrustBadges: React.FC<TrustBadgesProps> = ({ variant = 'inline', showAll = true }) => {
-  const emergencyNumber = '112'; // German emergency number
-  const hipaaComplianceUrl = '/privacy-policy#data-protection';
-  const securityCertificateUrl = 'https://www.ssllabs.com/ssltest/analyze.html?d=therapybook.de';
-  const providerVerificationUrl = 'https://www.bundesaerztekammer.de/service/arztsuche/';
-  const gdprComplianceUrl = '/privacy-policy#gdpr-compliance';
+  const items = [
+    {
+      icon: Lock,
+      title: 'Data handling',
+      subtitle: 'See privacy details',
+      description: 'Authentication, uploads, booking records, and reminder emails are routed through authenticated product flows.',
+      href: '/privacy#data-protection',
+      className: 'bg-blue-100 text-blue-600'
+    },
+    {
+      icon: FileCheck2,
+      title: 'Approved profiles',
+      subtitle: 'Reviewed trainee listings',
+      description: 'Public provider profiles come from reviewed trainee applications before they appear in the live directory.',
+      href: '/directory',
+      className: 'bg-primary-100 text-primary-600'
+    },
+    {
+      icon: CalendarClock,
+      title: 'Booking controls',
+      subtitle: 'Real scheduling rules',
+      description: 'Slots, payment confirmation, reminder emails, and session-room access all tie back to the live booking record.',
+      href: '/booking',
+      className: 'bg-green-100 text-green-600'
+    },
+    {
+      icon: Phone,
+      title: 'Emergency resources',
+      subtitle: 'Immediate help',
+      description: 'TherapyBook is not an emergency service. Use crisis support numbers if you need urgent assistance.',
+      href: `tel:${emergencyNumber}`,
+      className: 'bg-red-100 text-red-600'
+    }
+  ];
+
+  const visibleItems = showAll ? items : items.slice(0, 3);
 
   if (variant === 'header') {
     return (
-      <div className="flex items-center space-x-4">
-        {/* HIPAA Compliance Badge */}
-        <div className="flex items-center space-x-1 bg-blue-50 px-3 py-1 rounded-full">
-          <Shield className="h-4 w-4 text-blue-600" />
-          <span className="text-xs font-medium text-blue-700">HIPAA Compliant</span>
-        </div>
-        
-        {/* SSL Security Badge */}
-        <div className="flex items-center space-x-1 bg-green-50 px-3 py-1 rounded-full">
-          <Lock className="h-4 w-4 text-green-600" />
-          <span className="text-xs font-medium text-green-700">SSL Secured</span>
-        </div>
+      <div className="flex flex-wrap items-center gap-3">
+        {visibleItems.slice(0, 3).map((item) => {
+          const Icon = item.icon;
 
-        {/* Emergency Contact */}
-        <div className="flex items-center space-x-1 bg-red-50 px-3 py-1 rounded-full">
-          <Phone className="h-4 w-4 text-red-600" />
-          <span className="text-xs font-medium text-red-700">24/7 Support</span>
-        </div>
+          return (
+            <div key={item.title} className="flex items-center space-x-2 rounded-full bg-white px-3 py-1.5 shadow-subtle">
+              <Icon className="h-4 w-4 text-primary-500" />
+              <span className="text-xs font-medium text-neutral-700">{item.title}</span>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -40,122 +67,55 @@ const TrustBadges: React.FC<TrustBadgesProps> = ({ variant = 'inline', showAll =
   if (variant === 'footer') {
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* HIPAA Compliance */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-3">
-            <Shield className="h-6 w-6 text-blue-600" />
-          </div>
-          <h4 className="font-semibold text-neutral-900 mb-2">GDPR Compliant</h4>
-          <p className="text-sm text-neutral-600 mb-2">
-            Your health information is protected according to EU GDPR and German BDSG standards
-          </p>
-          <a 
-            href={gdprComplianceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-600 hover:text-blue-700 underline"
-          >
-            View Data Protection Policy
-          </a>
-        </div>
+        {visibleItems.map((item) => {
+          const Icon = item.icon;
+          const content = (
+            <>
+              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 ${item.className}`}>
+                <Icon className="h-6 w-6" />
+              </div>
+              <h4 className="font-semibold text-neutral-900 mb-2">{item.title}</h4>
+              <p className="text-sm text-neutral-600 mb-2">{item.description}</p>
+              <span className="text-xs font-medium text-primary-600 underline underline-offset-4">
+                {item.subtitle}
+              </span>
+            </>
+          );
 
-        {/* SSL Security */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-3">
-            <Lock className="h-6 w-6 text-green-600" />
-          </div>
-          <h4 className="font-semibold text-neutral-900 mb-2">SSL Encrypted</h4>
-          <p className="text-sm text-neutral-600 mb-2">
-            All data transmission is secured with TLS 1.3 encryption
-          </p>
-          <a 
-            href={securityCertificateUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-green-600 hover:text-green-700 underline"
-          >
-            Test SSL Security
-          </a>
-        </div>
-
-        {/* Licensed Providers */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 rounded-full mb-3">
-            <CheckCircle className="h-6 w-6 text-primary-600" />
-          </div>
-          <h4 className="font-semibold text-neutral-900 mb-2">Licensed Providers</h4>
-          <p className="text-sm text-neutral-600 mb-2">
-            Supervised trainees working under licensed professionals
-          </p>
-          <a 
-            href={providerVerificationUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-primary-600 hover:text-primary-700 underline"
-          >
-            German Medical Board Search
-          </a>
-        </div>
-
-        {/* Emergency Contact */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-3">
-            <Phone className="h-6 w-6 text-red-600" />
-          </div>
-          <h4 className="font-semibold text-neutral-900 mb-2">24/7 Emergency</h4>
-          <p className="text-sm text-neutral-600 mb-2">
-            Crisis support and emergency resources available
-          </p>
-          <a 
-            href={`tel:${emergencyNumber}`}
-            className="text-xs text-red-600 hover:text-red-700 underline font-semibold"
-          >
-            {emergencyNumber}
-          </a>
-        </div>
+          return (
+            <div key={item.title} className="text-center">
+              {item.href.startsWith('tel:') ? (
+                <a href={item.href} className="block rounded-2xl p-2 transition-colors hover:bg-neutral-50">
+                  {content}
+                </a>
+              ) : (
+                <Link href={item.href} className="block rounded-2xl p-2 transition-colors hover:bg-neutral-50">
+                  {content}
+                </Link>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
 
-  // Inline variant (default)
   return (
-    <div className="bg-neutral-50 rounded-xl p-6">
+    <div className="rounded-xl bg-neutral-50 p-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* HIPAA Badge */}
-        <div className="flex flex-col items-center text-center">
-          <div className="bg-blue-100 p-3 rounded-lg mb-2">
-            <Shield className="h-6 w-6 text-blue-600" />
-          </div>
-          <span className="text-sm font-medium text-neutral-900">HIPAA</span>
-          <span className="text-xs text-neutral-600">Compliant</span>
-        </div>
+        {visibleItems.map((item) => {
+          const Icon = item.icon;
 
-        {/* SSL Badge */}
-        <div className="flex flex-col items-center text-center">
-          <div className="bg-green-100 p-3 rounded-lg mb-2">
-            <Lock className="h-6 w-6 text-green-600" />
-          </div>
-          <span className="text-sm font-medium text-neutral-900">SSL</span>
-          <span className="text-xs text-neutral-600">Encrypted</span>
-        </div>
-
-        {/* Licensed Badge */}
-        <div className="flex flex-col items-center text-center">
-          <div className="bg-primary-100 p-3 rounded-lg mb-2">
-            <CheckCircle className="h-6 w-6 text-primary-600" />
-          </div>
-          <span className="text-sm font-medium text-neutral-900">Licensed</span>
-          <span className="text-xs text-neutral-600">Providers</span>
-        </div>
-
-        {/* Emergency Badge */}
-        <div className="flex flex-col items-center text-center">
-          <div className="bg-red-100 p-3 rounded-lg mb-2">
-            <Phone className="h-6 w-6 text-red-600" />
-          </div>
-          <span className="text-sm font-medium text-neutral-900">24/7</span>
-          <span className="text-xs text-neutral-600">Support</span>
-        </div>
+          return (
+            <div key={item.title} className="flex flex-col items-center text-center">
+              <div className={`mb-2 rounded-lg p-3 ${item.className}`}>
+                <Icon className="h-6 w-6" />
+              </div>
+              <span className="text-sm font-medium text-neutral-900">{item.title}</span>
+              <span className="text-xs text-neutral-600">{item.subtitle}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

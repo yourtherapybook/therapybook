@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Heart, Mail, Phone, MapPin, ExternalLink } from 'lucide-react';
+import { Heart, Mail, Phone, MapPin } from 'lucide-react';
 import TrustBadges from '../Common/TrustBadges';
 
 const Footer: React.FC = () => {
@@ -10,26 +10,14 @@ const Footer: React.FC = () => {
     platform: [
       { name: 'Find Therapists', href: '/directory' },
       { name: 'Take Assessment', href: '/matching' },
-      { name: 'Pricing', href: '/pricing' },
-      { name: 'For Practitioners', href: '/practitioners' }
+      { name: 'Pricing', href: '/pricing' }
     ],
     support: [
-      { name: 'Help Center', href: '/help' },
-      { name: 'Contact Us', href: '/contact' },
-      { name: 'Crisis Resources', href: '/crisis-resources' },
-      { name: 'Technical Support', href: '/support' }
+      { name: 'Contact Us', href: 'mailto:hello@therapybook.de' }
     ],
     legal: [
-      { name: 'Privacy Policy', href: '/privacy-policy' },
-      { name: 'Terms of Service', href: '/terms' },
-      { name: 'HIPAA Compliance', href: '/privacy-policy#data-protection' },
-      { name: 'Cookie Policy', href: '/cookies' }
-    ],
-    company: [
-      { name: 'About Us', href: '/about' },
-      { name: 'Our Mission', href: '/mission' },
-      { name: 'Careers', href: '/careers' },
-      { name: 'Press', href: '/press' }
+      { name: 'Privacy Policy', href: '/privacy' },
+      { name: 'Impressum', href: '/impressum' }
     ]
   };
 
@@ -43,8 +31,7 @@ const Footer: React.FC = () => {
               Your Trust & Safety Matter
             </h3>
             <p className="text-neutral-300 max-w-2xl mx-auto">
-              We maintain the highest standards of security, compliance, and professional care 
-              to ensure your mental health journey is safe and confidential.
+              TherapyBook now routes booking, onboarding, and session access through authenticated product flows with reviewed provider listings and direct privacy contact paths.
             </p>
           </div>
           <TrustBadges variant="footer" />
@@ -63,8 +50,8 @@ const Footer: React.FC = () => {
               <span className="text-xl font-semibold text-white">TherapyBook</span>
             </Link>
             <p className="text-neutral-300 text-sm mb-4 leading-relaxed">
-              Connecting you with qualified trainee therapists for accessible, 
-              professional mental health support.
+              Connecting clients with approved trainee therapists for accessible,
+              supervised mental health support.
             </p>
             <div className="space-y-2 text-sm">
               <div className="flex items-center text-neutral-300">
@@ -132,23 +119,6 @@ const Footer: React.FC = () => {
               ))}
             </ul>
           </div>
-
-          {/* Company Links */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Company</h4>
-            <ul className="space-y-2">
-              {footerLinks.company.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-neutral-300 hover:text-white transition-colors text-sm"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
         {/* Emergency Contact Section */}
@@ -161,7 +131,7 @@ const Footer: React.FC = () => {
                   24/7 Emergency Support
                 </h4>
                 <p className="text-red-200 text-sm mb-3">
-                  If you're experiencing a mental health crisis or emergency, 
+                  If you're experiencing a mental health crisis or emergency,
                   immediate help is available:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -199,7 +169,7 @@ const Footer: React.FC = () => {
                 Impressum
               </Link>
               <Link
-                href="/privacy-policy"
+                href="/privacy"
                 className="text-neutral-400 hover:text-white transition-colors"
               >
                 Datenschutz
@@ -208,10 +178,17 @@ const Footer: React.FC = () => {
                 href="https://www.telefonseelsorge.de/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center text-neutral-400 hover:text-white transition-colors"
+                className="text-neutral-400 hover:text-white transition-colors"
               >
-                <span>Telefonseelsorge</span>
-                <span>Deutsche Depressionshilfe</span>
+                Telefonseelsorge
+              </a>
+              <a
+                href="https://www.deutsche-depressionshilfe.de/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-neutral-400 hover:text-white transition-colors"
+              >
+                Deutsche Depressionshilfe
               </a>
               <a
                 href="tel:116117"

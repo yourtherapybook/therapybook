@@ -1,31 +1,32 @@
 import React from 'react';
+import Link from 'next/link';
 import { ClipboardList, Users, Calendar, Video } from 'lucide-react';
-import BookingButton from '../Common/BookingButton';
+import { Button } from '../ui/button';
 
 const Process: React.FC = () => {
   const steps = [
     {
       icon: ClipboardList,
-      title: 'Take Assessment',
-      description: 'Complete our comprehensive questionnaire to help us understand your needs and preferences.',
+      title: 'Share your needs',
+      description: 'Answer the matching questionnaire so the platform can score approved providers against your stated preferences.',
       color: 'bg-blue-100 text-blue-600'
     },
     {
       icon: Users,
-      title: 'Get Matched',
-      description: 'Our algorithm connects you with 3 pre-licensed therapists who best fit your criteria.',
+      title: 'Review live matches',
+      description: 'Compare a shortlist built from real provider records, specialties, languages, and availability-backed directory data.',
       color: 'bg-primary-100 text-primary-600'
     },
     {
       icon: Calendar,
-      title: 'Schedule Session',
-      description: 'Book your first appointment at a time that works for your schedule - no upfront fees required.',
+      title: 'Reserve a real slot',
+      description: 'Pick a published appointment time, then let the server validate it before checkout begins.',
       color: 'bg-green-100 text-green-600'
     },
     {
       icon: Video,
       title: 'Start Therapy',
-      description: 'Begin your mental health journey with secure video sessions from anywhere.',
+      description: 'Join the session through your authenticated room link after payment confirmation and reminder emails.',
       color: 'bg-purple-100 text-purple-600'
     }
   ];
@@ -86,11 +87,11 @@ const Process: React.FC = () => {
               Ready to get started?
             </h3>
             <p className="text-neutral-600 mb-6">
-              Take the first step towards better mental health today.
+              Start with the assessment if you want a shortlist before booking.
             </p>
-            <BookingButton>
-              Begin Assessment
-            </BookingButton>
+            <Button asChild size="lg">
+              <Link href="/matching">Begin Assessment</Link>
+            </Button>
           </div>
         </div>
       </div>

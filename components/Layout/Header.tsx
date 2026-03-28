@@ -1,13 +1,14 @@
+"use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { Heart, Menu, X, Globe } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Heart, Menu, X } from 'lucide-react';
 import BookingButton from '../Common/BookingButton';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('EN');
   const router = useRouter();
+  const pathname = usePathname();
 
   const navigation = [
     { name: 'Find Therapists', href: '/directory' },
@@ -16,7 +17,7 @@ const Header: React.FC = () => {
     { name: 'Take Assessment', href: '/matching' },
   ];
 
-  const isActive = (path: string) => router.pathname === path;
+  const isActive = (path: string) => pathname === path;
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-neutral-200">
@@ -36,29 +37,18 @@ const Header: React.FC = () => {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive(item.href)
-                    ? 'text-primary-600 bg-primary-50'
-                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(item.href)
+                  ? 'text-primary-600 bg-primary-50'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+                  }`}
               >
                 {item.name}
               </Link>
             ))}
           </div>
 
-          {/* Language Toggle & CTA */}
+          {/* CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            <div className="relative">
-              <button
-                onClick={() => setCurrentLanguage(currentLanguage === 'EN' ? 'ES' : 'EN')}
-                className="flex items-center space-x-1 px-3 py-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
-                aria-label="Toggle language"
-              >
-                <Globe className="h-4 w-4" />
-                <span>{currentLanguage}</span>
-              </button>
-            </div>
             <BookingButton size="sm">
               Book Session
             </BookingButton>
@@ -75,38 +65,31 @@ const Header: React.FC = () => {
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-neutral-200">
-            <div className="flex flex-col space-y-2">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive(item.href)
+        {
+          isMenuOpen && (
+            <div className="md:hidden py-4 border-t border-neutral-200">
+              <div className="flex flex-col space-y-2">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(item.href)
                       ? 'text-primary-600 bg-primary-50'
                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              <div className="flex items-center justify-between pt-4 border-t border-neutral-200">
-                <button
-                  onClick={() => setCurrentLanguage(currentLanguage === 'EN' ? 'ES' : 'EN')}
-                  className="flex items-center space-x-1 px-3 py-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
-                >
-                  <Globe className="h-4 w-4" />
-                  <span>{currentLanguage}</span>
-                </button>
-                <BookingButton size="sm">
-                  Book Session
-                </BookingButton>
+                      }`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+                <div className="flex items-center justify-end pt-4 border-t border-neutral-200">
+                  <BookingButton size="sm">
+                    Book Session
+                  </BookingButton>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </nav>
     </header>
   );

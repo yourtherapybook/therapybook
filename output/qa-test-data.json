@@ -1,0 +1,146 @@
+{
+  "seededAt": "2026-03-25T18:47:35.908Z",
+  "password": "TherapyBook123!",
+  "users": {
+    "admin": {
+      "email": "qa.admin@therapybook.test",
+      "role": "ADMIN",
+      "emailVerified": true
+    },
+    "supervisor": {
+      "email": "qa.supervisor@therapybook.test",
+      "role": "SUPERVISOR",
+      "emailVerified": true
+    },
+    "clientVerified": {
+      "email": "qa.client.verified@therapybook.test",
+      "role": "CLIENT",
+      "emailVerified": true
+    },
+    "clientReturning": {
+      "email": "qa.client.returning@therapybook.test",
+      "role": "CLIENT",
+      "emailVerified": true
+    },
+    "clientUnverified": {
+      "email": "qa.client.unverified@therapybook.test",
+      "role": "CLIENT",
+      "emailVerified": false
+    },
+    "traineeAvailable": {
+      "email": "qa.trainee.available@therapybook.test",
+      "role": "TRAINEE",
+      "emailVerified": true
+    },
+    "traineeBooked": {
+      "email": "qa.trainee.booked@therapybook.test",
+      "role": "TRAINEE",
+      "emailVerified": true
+    },
+    "traineeOffline": {
+      "email": "qa.trainee.offline@therapybook.test",
+      "role": "TRAINEE",
+      "emailVerified": true
+    },
+    "applicantDraft": {
+      "email": "qa.applicant.draft@therapybook.test",
+      "role": "CLIENT",
+      "emailVerified": true
+    },
+    "applicantSubmitted": {
+      "email": "qa.applicant.submitted@therapybook.test",
+      "role": "CLIENT",
+      "emailVerified": true
+    },
+    "applicantUnderReview": {
+      "email": "qa.applicant.review@therapybook.test",
+      "role": "CLIENT",
+      "emailVerified": true
+    },
+    "applicantRejected": {
+      "email": "qa.applicant.rejected@therapybook.test",
+      "role": "CLIENT",
+      "emailVerified": true
+    }
+  },
+  "providers": [
+    {
+      "name": "Taylor Available",
+      "therapistId": "cmn6eb4j20005ssvs20ekulo6",
+      "availability": "available"
+    },
+    {
+      "name": "Blake Booked",
+      "therapistId": "cmn6eb4qc0006ssvs4s3qcueb",
+      "availability": "available"
+    },
+    {
+      "name": "Olive Offline",
+      "therapistId": "cmn6eb4yn0007ssvspdmxmsj6",
+      "availability": "offline"
+    }
+  ],
+  "sessions": {
+    "futureConfirmed": {
+      "id": "cmn6ebgqn0016ssvsuwmcozro",
+      "status": "SCHEDULED",
+      "scheduledAt": "2026-03-30T07:00:00.000Z"
+    },
+    "futurePending": {
+      "id": "cmn6ebh3r0018ssvs16eronwg",
+      "status": "SCHEDULED",
+      "scheduledAt": "2026-03-30T12:00:00.000Z"
+    },
+    "pastCompleted": {
+      "id": "cmn6ebhao001assvsgganrdit",
+      "status": "COMPLETED",
+      "scheduledAt": "2026-03-18T13:00:00.000Z"
+    },
+    "pastCancelled": {
+      "id": "cmn6ebhn8001cssvslraq4uvy",
+      "status": "CANCELLED",
+      "scheduledAt": "2026-03-20T09:00:00.000Z"
+    },
+    "pastNoShow": {
+      "id": "cmn6ebi0h001essvs5vmurcvl",
+      "status": "NO_SHOW",
+      "scheduledAt": "2026-03-20T14:00:00.000Z"
+    }
+  },
+  "payments": [
+    {
+      "id": "cmn6ebjj9001gssvsb2qifdru",
+      "status": "COMPLETED",
+      "sessionId": "cmn6ebgqn0016ssvsuwmcozro"
+    },
+    {
+      "id": "cmn6ebjj9001issvsdbrs0rw3",
+      "status": "PENDING",
+      "sessionId": "cmn6ebh3r0018ssvs16eronwg"
+    },
+    {
+      "id": "cmn6ebjja001kssvsezgwq8xd",
+      "status": "COMPLETED",
+      "sessionId": "cmn6ebhao001assvsgganrdit"
+    },
+    {
+      "id": "cmn6ebjja001mssvseiiohnts",
+      "status": "REFUNDED",
+      "sessionId": "cmn6ebhn8001cssvslraq4uvy"
+    },
+    {
+      "id": "cmn6ebjja001ossvsodcfhvzm",
+      "status": "COMPLETED",
+      "sessionId": "cmn6ebi0h001essvs5vmurcvl"
+    }
+  ],
+  "bookingEdgeCases": {
+    "blockedSlot": {
+      "therapistId": "cmn6eb4j20005ssvs20ekulo6",
+      "startDateTime": "2026-03-27T09:00:00.000Z",
+      "endDateTime": "2026-03-27T10:00:00.000Z"
+    },
+    "unverifiedClientEmail": "qa.client.unverified@therapybook.test",
+    "offlineTherapistId": "cmn6eb4yn0007ssvspdmxmsj6"
+  }
+}

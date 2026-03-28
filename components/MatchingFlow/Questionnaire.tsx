@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { QuestionnaireStep } from '../../types';

@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +34,7 @@ interface AccountInfoFormData {
   phone?: string;
   password: string;
   confirmPassword: string;
+  requiresPassword?: boolean;
 }
 
 const Step1AccountInfo: React.FC<Step1AccountInfoProps> = ({
@@ -45,6 +47,7 @@ const Step1AccountInfo: React.FC<Step1AccountInfoProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<{ score: number; feedback: string[] }>({ score: 0, feedback: [] });
+  const requiresPassword = data.accountInfo?.requiresPassword !== false;
 
   const form = useForm<AccountInfoFormData>({
     resolver: zodResolver(accountInfoSchema),
@@ -55,12 +58,25 @@ const Step1AccountInfo: React.FC<Step1AccountInfoProps> = ({
       phone: data.accountInfo?.phone || '',
       password: data.accountInfo?.password || '',
       confirmPassword: data.accountInfo?.confirmPassword || '',
+      requiresPassword,
     },
     mode: 'onChange', // Enable real-time validation
   });
 
   const { watch, formState: { errors, isValid } } = form;
   const watchedPassword = watch('password');
+
+  useEffect(() => {
+    form.reset({
+      firstName: data.accountInfo?.firstName || '',
+      lastName: data.accountInfo?.lastName || '',
+      email: data.accountInfo?.email || '',
+      phone: data.accountInfo?.phone || '',
+      password: data.accountInfo?.password || '',
+      confirmPassword: data.accountInfo?.confirmPassword || '',
+      requiresPassword,
+    });
+  }, [data.accountInfo, form]);
 
   // Update password strength in real-time
   useEffect(() => {
@@ -84,16 +100,20 @@ const Step1AccountInfo: React.FC<Step1AccountInfoProps> = ({
           phone: value.phone || '',
           password: value.password || '',
           confirmPassword: value.confirmPassword || '',
+          requiresPassword,
         },
       });
     });
     return () => subscription.unsubscribe();
-  }, [form, data, onUpdate]);
+  }, [data, form, onUpdate, requiresPassword]);
 
   const onSubmit = (formData: AccountInfoFormData) => {
     onUpdate({
       ...data,
-      accountInfo: formData,
+      accountInfo: {
+        ...formData,
+        requiresPassword,
+      },
     });
     onNext();
   };
@@ -121,7 +141,9 @@ const Step1AccountInfo: React.FC<Step1AccountInfoProps> = ({
           Account Information
         </h2>
         <p className="text-neutral-600">
-          Let's start with your basic information and login credentials
+          {requiresPassword
+            ? "Let's start with your basic information and create your trainee account"
+            : "Review the account information attached to this application"}
         </p>
       </div>
 
@@ -221,113 +243,115 @@ const Step1AccountInfo: React.FC<Step1AccountInfoProps> = ({
                 )}
               />
 
-              {/* Password Fields */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-neutral-700 font-medium">
-                      Password *
-                    </FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Create a strong password"
-                          className="border-neutral-300 focus:border-primary-500 focus:ring-primary-500 pr-10"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-neutral-500" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-neutral-500" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    
-                    {/* Password Strength Indicator */}
-                    {watchedPassword && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-neutral-600">Password strength:</span>
-                          <span className={`text-sm font-medium ${
-                            passwordStrength.score <= 2 ? 'text-destructive' : 
-                            passwordStrength.score <= 3 ? 'text-orange-500' : 'text-green-600'
-                          }`}>
-                            {getPasswordStrengthText(passwordStrength.score)}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={(passwordStrength.score / 5) * 100} 
-                          className="h-2"
-                        />
-                        {passwordStrength.feedback.length > 0 && (
-                          <div className="space-y-1">
-                            {passwordStrength.feedback.map((feedback, index) => (
-                              <div key={index} className="flex items-center gap-2 text-sm text-neutral-600">
-                                <X className="h-3 w-3 text-destructive" />
-                                {feedback}
+              {requiresPassword && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-neutral-700 font-medium">
+                          Password *
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="Create a strong password"
+                              className="border-neutral-300 focus:border-primary-500 focus:ring-primary-500 pr-10"
+                              {...field}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4 text-neutral-500" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-neutral-500" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        
+                        {watchedPassword && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-neutral-600">Password strength:</span>
+                              <span className={`text-sm font-medium ${
+                                passwordStrength.score <= 2 ? 'text-destructive' : 
+                                passwordStrength.score <= 3 ? 'text-orange-500' : 'text-green-600'
+                              }`}>
+                                {getPasswordStrengthText(passwordStrength.score)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={(passwordStrength.score / 5) * 100} 
+                              className="h-2"
+                            />
+                            {passwordStrength.feedback.length > 0 && (
+                              <div className="space-y-1">
+                                {passwordStrength.feedback.map((feedback, index) => (
+                                  <div key={index} className="flex items-center gap-2 text-sm text-neutral-600">
+                                    <X className="h-3 w-3 text-destructive" />
+                                    {feedback}
+                                  </div>
+                                ))}
                               </div>
-                            ))}
+                            )}
+                            {passwordStrength.score >= 4 && (
+                              <div className="flex items-center gap-2 text-sm text-green-600">
+                                <Check className="h-3 w-3" />
+                                Password meets security requirements
+                              </div>
+                            )}
                           </div>
                         )}
-                        {passwordStrength.score >= 4 && (
-                          <div className="flex items-center gap-2 text-sm text-green-600">
-                            <Check className="h-3 w-3" />
-                            Password meets security requirements
-                          </div>
-                        )}
-                      </div>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  />
 
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-neutral-700 font-medium">
-                      Confirm Password *
-                    </FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          placeholder="Confirm your password"
-                          className="border-neutral-300 focus:border-primary-500 focus:ring-primary-500 pr-10"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4 text-neutral-500" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-neutral-500" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-neutral-700 font-medium">
+                          Confirm Password *
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              placeholder="Confirm your password"
+                              className="border-neutral-300 focus:border-primary-500 focus:ring-primary-500 pr-10"
+                              {...field}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="h-4 w-4 text-neutral-500" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-neutral-500" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
 
               {/* Navigation Buttons */}
               <div className="flex justify-between pt-6">
@@ -345,7 +369,7 @@ const Step1AccountInfo: React.FC<Step1AccountInfoProps> = ({
                   className="bg-primary-500 hover:bg-primary-600 text-white"
                   disabled={!isValid}
                 >
-                  Next Step
+                  {requiresPassword ? 'Create Account & Continue' : 'Continue'}
                 </Button>
               </div>
             </form>

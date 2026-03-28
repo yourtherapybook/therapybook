@@ -1,0 +1,2 @@
+export const DEFAULT_SESSION_PRICE_EUR = 40;
+export const DEFAULT_SESSION_CURRENCY = 'EUR';

@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,7 +10,7 @@ import { Textarea } from '../../ui/textarea';
 import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { MultiSelect } from '../../ui/multi-select';
-import { FileUpload } from '../../ui/file-upload';
+import { R2Uploader } from '../../ui/r2-uploader';
 import {
   Form,
   FormControl,
@@ -71,6 +72,25 @@ const Step3PublicProfile: React.FC<Step3PublicProfileProps> = ({
 
   const watchedValues = form.watch();
 
+  useEffect(() => {
+    form.reset({
+      title: data.publicProfile?.title || '',
+      therapistType: 'Student Intern / Trainee' as const,
+      institutionOfStudy: data.publicProfile?.institutionOfStudy || '',
+      skillsAcquired: data.publicProfile?.skillsAcquired || [],
+      otherSkills: data.publicProfile?.otherSkills || '',
+      specialties: data.publicProfile?.specialties || [],
+      treatmentOrientation: data.publicProfile?.treatmentOrientation || [],
+      modality: data.publicProfile?.modality || [],
+      ageGroups: data.publicProfile?.ageGroups || [],
+      languages: data.publicProfile?.languages || [],
+      otherLanguages: data.publicProfile?.otherLanguages || '',
+      ethnicitiesServed: data.publicProfile?.ethnicitiesServed || [],
+      personalStatement: data.publicProfile?.personalStatement || '',
+      profilePhotoUrl: data.publicProfile?.profilePhotoUrl || '',
+    });
+  }, [data.publicProfile, form]);
+
   // Update parent component when form values change
   useEffect(() => {
     const publicProfile = {
@@ -78,7 +98,7 @@ const Step3PublicProfile: React.FC<Step3PublicProfileProps> = ({
       therapistType: 'Student Intern / Trainee' as const,
       title: watchedValues.title as 'Dr.' | 'Mr.' | 'Mrs.' | 'Ms.' | 'Mx.' | '',
     };
-    
+
     onUpdate({
       ...data,
       publicProfile,
@@ -109,18 +129,18 @@ const Step3PublicProfile: React.FC<Step3PublicProfileProps> = ({
   // Convert constants to options format
   const skillsOptions = SKILLS_ACQUIRED.map(skill => ({ value: skill, label: skill }))
     .concat([{ value: 'Other', label: 'Other (please specify)' }]);
-  
+
   const specialtiesOptions = SPECIALTIES.map(specialty => ({ value: specialty, label: specialty }));
-  
+
   const treatmentOptions = TREATMENT_ORIENTATIONS.map(treatment => ({ value: treatment, label: treatment }));
-  
+
   const modalityOptions = MODALITIES.map(modality => ({ value: modality, label: modality }));
-  
+
   const ageGroupOptions = AGE_GROUPS.map(age => ({ value: age, label: age }));
-  
+
   const languageOptions = LANGUAGES_EXTENDED.map(lang => ({ value: lang, label: lang }))
     .concat([{ value: 'Other', label: 'Other (please specify)' }]);
-  
+
   const ethnicityOptions = ETHNICITIES_SERVED.map(ethnicity => ({ value: ethnicity, label: ethnicity }));
 
   return (
@@ -400,10 +420,9 @@ const Step3PublicProfile: React.FC<Step3PublicProfileProps> = ({
                   <FormDescription>
                     Minimum 200 characters required
                   </FormDescription>
-                  <span className={`text-sm ${
-                    characterCount < 200 ? 'text-red-500' : 
+                  <span className={`text-sm ${characterCount < 200 ? 'text-red-500' :
                     characterCount > 1000 ? 'text-red-500' : 'text-neutral-500'
-                  }`}>
+                    }`}>
                     {characterCount}/1000
                   </span>
                 </div>
@@ -420,10 +439,11 @@ const Step3PublicProfile: React.FC<Step3PublicProfileProps> = ({
               <FormItem>
                 <FormLabel>Profile Photo</FormLabel>
                 <FormControl>
-                  <FileUpload
+                  <R2Uploader
+                    fileType="PROFILE_PHOTO"
+                    accept="image/*"
                     value={field.value}
                     onChange={field.onChange}
-                    onRemove={() => field.onChange('')}
                   />
                 </FormControl>
                 <FormDescription>

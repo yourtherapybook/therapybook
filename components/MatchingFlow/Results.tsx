@@ -1,5 +1,6 @@
 import React from 'react';
-import { Heart, Star, Calendar, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { Heart, Calendar, ArrowRight } from 'lucide-react';
 import { MatchingResult } from '../../types';
 
 interface ResultsProps {
@@ -42,9 +43,8 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
                     {result.matchPercentage}% Match
                   </span>
                 </div>
-                <div className="flex items-center text-sm text-neutral-600">
-                  <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                  {result.therapist.rating} ({result.therapist.reviewCount} reviews)
+                <div className="text-sm text-neutral-600">
+                  {result.therapist.institutionOfStudy || 'Approved TherapyBook trainee'}
                 </div>
               </div>
 
@@ -101,9 +101,9 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
                 <div className="space-y-4">
                   <div className="bg-neutral-50 rounded-xl p-4">
                     <div className="text-2xl font-bold text-neutral-900 mb-1">
-                      ${result.therapist.hourlyRate}
+                      €{result.therapist.hourlyRate}
                     </div>
-                    <div className="text-sm text-neutral-600">per hour</div>
+                    <div className="text-sm text-neutral-600">per session</div>
                   </div>
 
                   <div className="space-y-2">
@@ -114,9 +114,12 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
                       <Calendar className="h-4 w-4 mr-2" />
                       Book Session
                     </button>
-                    <button className="w-full border border-neutral-200 hover:bg-neutral-50 text-neutral-700 py-3 px-4 rounded-lg font-medium transition-colors">
-                      View Profile
-                    </button>
+                    <Link
+                      href="/directory"
+                      className="block w-full border border-neutral-200 hover:bg-neutral-50 text-neutral-700 py-3 px-4 rounded-lg font-medium transition-colors text-center"
+                    >
+                      Browse Directory
+                    </Link>
                   </div>
 
                   <div className="text-center">
@@ -141,7 +144,7 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
           <ArrowRight className="h-4 w-4 ml-1" />
         </button>
         <p className="text-sm text-neutral-500">
-          You can retake the assessment or browse all available therapists
+          You can retake the assessment or continue into the full directory.
         </p>
       </div>
     </div>
