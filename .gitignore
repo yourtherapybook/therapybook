@@ -33,3 +33,4 @@ out/
 .env.local
 
 /src/generated/prisma
+.claude/worktrees/

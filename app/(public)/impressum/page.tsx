@@ -55,6 +55,40 @@ const ImpressumPage: React.FC = () => {
               Questions about product content, privacy requests, or legal notices can be sent to the contact address above. The live directory only displays approved trainee profiles and is backed by the current application-review workflow.
             </p>
           </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-neutral-900 mb-3">Booking and cancellation policy</h2>
+            <div className="text-sm leading-relaxed text-neutral-600 space-y-3">
+              <p>
+                Sessions are confirmed only after payment has been processed through our secure checkout. Reservations created before payment is complete are held temporarily and released if checkout is not finished.
+              </p>
+              <p>
+                Cancellations made more than 24 hours before the scheduled session receive a full refund. Cancellations within 24 hours of the session are not eligible for a refund unless initiated by an administrator.
+              </p>
+              <p>
+                Rescheduling is available up to 24 hours before the session, subject to therapist availability. Both client and therapist are notified by email when a session is cancelled or rescheduled.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-neutral-900 mb-3">Refund policy</h2>
+            <div className="text-sm leading-relaxed text-neutral-600 space-y-3">
+              <p>
+                Refunds are processed automatically when a session is cancelled with more than 24 hours notice. The payment is marked as refunded in our system. Depending on your payment provider, refund processing may take 5–10 business days to appear on your statement.
+              </p>
+              <p>
+                For cancellations within 24 hours, no-shows, or disputes, please contact support at <a href="mailto:support@therapybook.com" className="text-primary-600 hover:text-primary-500">support@therapybook.com</a>.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-neutral-900 mb-3">Support</h2>
+            <p className="text-sm leading-relaxed text-neutral-600">
+              For booking issues, refund requests, therapist concerns, or account help, contact <a href="mailto:support@therapybook.com" className="text-primary-600 hover:text-primary-500">support@therapybook.com</a>. We aim to respond within 2 business days.
+            </p>
+          </section>
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
 
 interface User {
@@ -19,9 +20,9 @@ interface AuthState {
 export const useAuth = () => {
   const { data: session, status } = useSession()
 
-  const authState: AuthState = {
-    isAuthenticated: !!session,
-    user: session?.user ? {
+  const user = useMemo<User | null>(() => {
+    if (!session?.user) return null
+    return {
       id: session.user.id,
       email: session.user.email!,
       name: session.user.name || `${session.user.firstName} ${session.user.lastName}`,
@@ -29,7 +30,12 @@ export const useAuth = () => {
       lastName: session.user.lastName,
       role: session.user.role,
       image: session.user.image || undefined
-    } : null,
+    }
+  }, [session?.user?.id, session?.user?.email, session?.user?.firstName, session?.user?.lastName, session?.user?.role, session?.user?.image, session?.user?.name])
+
+  const authState: AuthState = {
+    isAuthenticated: !!session,
+    user,
     isLoading: status === 'loading'
   }
 

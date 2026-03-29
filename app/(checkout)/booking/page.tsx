@@ -234,7 +234,7 @@ function BookingContent() {
           <Card className="border-blue-200 bg-blue-50">
             <CardContent className="pt-6">
               {paymentStatus === 'completed' && confirmedPayment?.session ? (
-                <div className="space-y-2 text-blue-900">
+                <div className="space-y-3 text-blue-900">
                   <div className="flex items-center gap-2 font-medium">
                     <CheckCircle2 className="h-5 w-5" />
                     Payment received. Your session is confirmed.
@@ -243,6 +243,12 @@ function BookingContent() {
                     Session with {confirmedPayment.session.therapist.firstName} {confirmedPayment.session.therapist.lastName} on{' '}
                     {new Date(confirmedPayment.session.scheduledAt).toLocaleString()}.
                   </p>
+                  <Link
+                    href="/client-dashboard"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+                  >
+                    Go to My Dashboard →
+                  </Link>
                 </div>
               ) : paymentStatus === 'failed' ? (
                 <div className="flex items-center gap-2 text-red-700">
@@ -267,8 +273,28 @@ function BookingContent() {
                 Booking is blocked until your account email has been verified.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-red-800">Use the verification link sent to your inbox, then reload this page.</p>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-red-800">Check your inbox for the verification link, then reload this page.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/auth/resend-verification', { method: 'POST' });
+                    if (res.ok) {
+                      setError(null);
+                      alert('Verification email sent! Check your inbox.');
+                    } else {
+                      const data = await res.json();
+                      setError(data.error || 'Failed to resend');
+                    }
+                  } catch {
+                    setError('Failed to resend verification email');
+                  }
+                }}
+              >
+                Resend Verification Email
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -325,29 +351,50 @@ function BookingContent() {
           </Card>
 
           <div className="space-y-6">
+            {/* Therapist mini-card */}
+            {selectedTherapist && (
+              <Card className="border-neutral-200">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    {selectedTherapist.image ? (
+                      <img src={selectedTherapist.image} alt={selectedTherapist.name} className="h-12 w-12 rounded-lg object-cover border border-neutral-200" />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-sm">
+                        {selectedTherapist.name.split(' ').map((n: string) => n[0]).join('')}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-neutral-900 truncate">{selectedTherapist.name}</div>
+                      <div className="text-xs text-neutral-500 truncate">{selectedTherapist.credentials}</div>
+                      {selectedTherapist.specializations?.length > 0 && (
+                        <div className="text-xs text-primary-600 mt-0.5 truncate">{selectedTherapist.specializations.slice(0, 2).join(', ')}</div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="border-neutral-200">
               <CardHeader>
                 <CardTitle>Booking summary</CardTitle>
-                <CardDescription>Server-owned pricing and slot validation are applied at checkout.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 text-sm text-neutral-700">
-                <div>
-                  <div className="font-medium text-neutral-900">Provider</div>
-                  <div>{selectedTherapist ? selectedTherapist.name : 'Select a provider'}</div>
+              <CardContent className="space-y-3 text-sm text-neutral-700">
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Session time</span>
+                  <span className="font-medium text-neutral-900">
+                    {selectedSlot ? new Date(selectedSlot.datetime).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Select a slot'}
+                  </span>
                 </div>
-                <div>
-                  <div className="font-medium text-neutral-900">Session time</div>
-                  <div>
-                    {selectedSlot ? new Date(selectedSlot.datetime).toLocaleString() : 'Select a slot'}
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Duration</span>
+                  <span className="font-medium text-neutral-900">50 minutes</span>
                 </div>
-                <div>
-                  <div className="font-medium text-neutral-900">Price</div>
-                  <div>EUR 40.00</div>
-                </div>
-                <div>
-                  <div className="font-medium text-neutral-900">Duration</div>
-                  <div>50 minutes</div>
+                <div className="flex justify-between border-t border-neutral-100 pt-3">
+                  <span className="font-medium text-neutral-900">Total</span>
+                  <span className="font-bold text-neutral-900">
+                    EUR {selectedTherapist ? selectedTherapist.hourlyRate.toFixed(2) : '—'}
+                  </span>
                 </div>
               </CardContent>
             </Card>

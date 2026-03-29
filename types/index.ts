@@ -11,7 +11,7 @@ export interface Therapist {
   ageGroups?: string[];
   languages: string[];
   hourlyRate: number;
-  availability: 'available' | 'busy' | 'offline';
+  availability: 'available' | 'offline';
   rating?: number;
   reviewCount?: number;
   bio: string;

@@ -62,46 +62,90 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
             return NextResponse.json({ error: 'Rejection reason is required' }, { status: 400 });
         }
 
-        const existingApp = await prisma.traineeApplication.findUnique({
-            where: { id },
-            include: { user: true }
-        });
-
-        if (!existingApp) return NextResponse.json({ error: 'Entity missing from cluster' }, { status: 404 });
-        if (existingApp.status !== 'SUBMITTED' && existingApp.status !== 'UNDER_REVIEW') {
-            return NextResponse.json({ error: 'Cannot transition from hardened terminal state' }, { status: 400 });
+        if (decision === 'APPROVED' && !reason?.trim()) {
+            return NextResponse.json({ error: 'Approval reasoning is required for audit' }, { status: 400 });
         }
 
-        // Atomic cross-table update encompassing the role upgrade and application tracking
+        const existingApp = await prisma.traineeApplication.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    include: {
+                        documents: true,
+                    },
+                },
+            },
+        });
+
+        if (!existingApp) return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+        if (existingApp.status !== 'SUBMITTED' && existingApp.status !== 'UNDER_REVIEW') {
+            return NextResponse.json({ error: 'Application is in a terminal state and cannot be changed' }, { status: 400 });
+        }
+
+        // Enforce approval prerequisites
+        if (decision === 'APPROVED') {
+            const agreements = [
+                existingApp.paymentAgreement,
+                existingApp.responseTimeAgreement,
+                existingApp.minimumClientCommitment,
+                existingApp.termsOfService,
+            ];
+            if (!agreements.every(Boolean)) {
+                return NextResponse.json(
+                    { error: 'Cannot approve: applicant has not accepted all required agreements' },
+                    { status: 400 }
+                );
+            }
+
+            const verifiedDocs = existingApp.user.documents.filter(
+                (d) => d.status === 'VERIFIED' && d.type !== 'PROFILE_PHOTO'
+            );
+            if (verifiedDocs.length === 0) {
+                return NextResponse.json(
+                    { error: 'Cannot approve: at least one credential document must be verified' },
+                    { status: 400 }
+                );
+            }
+
+            const pendingDocs = existingApp.user.documents.filter(
+                (d) => d.status === 'PENDING' && d.type !== 'PROFILE_PHOTO'
+            );
+            if (pendingDocs.length > 0) {
+                return NextResponse.json(
+                    { error: 'Cannot approve: all uploaded documents must be reviewed before approval' },
+                    { status: 400 }
+                );
+            }
+        }
+
         const resolvedAt = new Date();
         const updatedApplication = await TransactionService.executeWithAudit(
             'ADMIN_APPLICATION_DECISION',
             session.user.id,
             'TraineeApplication',
             async (tx: any) => {
-                // 1. Update Application Status
                 const nextApplication = await tx.traineeApplication.update({
                     where: { id },
                     data: {
                         status: decision as any,
                         rejectionReason: decision === 'REJECTED' ? reason?.trim() || null : null,
+                        approvalReason: decision === 'APPROVED' ? reason?.trim() || null : null,
                         reviewedAt: resolvedAt,
-                        approvedAt: decision === 'APPROVED' ? resolvedAt : null
-                    }
+                        approvedAt: decision === 'APPROVED' ? resolvedAt : null,
+                    },
                 });
 
-                // 2. Elevate role intrinsically upon APPROVED vector
                 if (decision === 'APPROVED') {
                     await tx.user.update({
                         where: { id: existingApp.userId },
-                        data: { role: 'TRAINEE' }
+                        data: { role: 'TRAINEE' },
                     });
                 }
 
                 return {
                     entityId: id,
                     payload: { decision, reason: reason || null, userId: existingApp.userId },
-                    returnedData: nextApplication
+                    returnedData: nextApplication,
                 };
             }
         );

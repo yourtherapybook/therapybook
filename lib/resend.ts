@@ -254,8 +254,8 @@ export const sendSessionBooked = async (
 
 export const sendSessionCancellation = async (
   email: string,
-  clientName: string,
-  therapistName: string,
+  recipientName: string,
+  otherPartyName: string,
   sessionDate: string,
   reason: string
 ) => {
@@ -267,15 +267,15 @@ export const sendSessionCancellation = async (
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #FF7F50;">Session Cancelled</h2>
-          <p>Hi ${clientName},</p>
-          <p>Your session with ${therapistName} on ${sessionDate} has been cancelled.</p>
+          <p>Hi ${recipientName},</p>
+          <p>A session with ${otherPartyName} on ${sessionDate} has been cancelled.</p>
           <p><strong>Reason:</strong> ${reason}</p>
-          <p>Your session credit has been restored to your account. You can book a new session anytime.</p>
+          <p>If a refund is applicable, it will be processed automatically. You can book a new session anytime.</p>
           <a href="${bookingUrl}" style="background: #FF7F50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Book New Session</a>
           <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #666;">
             TherapyBook - Making Mental Health Care Accessible<br>
-            If you have any questions, please contact us at support@therapybook.com
+            If you have questions about refunds or need help, contact us at support@therapybook.com
           </p>
         </div>
       `

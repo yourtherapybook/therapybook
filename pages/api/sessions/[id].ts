@@ -39,6 +39,17 @@ const sessionInclude = {
   },
 } as const;
 
+/**
+ * Determines refund eligibility based on cancellation timing.
+ * >24h before session: full refund
+ * Admin override: full refund regardless of timing
+ */
+function getRefundPolicy(hoursUntilSession: number, isAdmin: boolean): { eligible: boolean; type: 'FULL' | 'NONE' } {
+  if (isAdmin) return { eligible: true, type: 'FULL' };
+  if (hoursUntilSession > 24) return { eligible: true, type: 'FULL' };
+  return { eligible: false, type: 'NONE' };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -112,26 +123,96 @@ export default async function handler(
         }
       }
 
-      const updatedSession = await prisma.session.update({
-        where: { id },
-        data: {
-          ...(validatedData.notes !== undefined ? { notes: validatedData.notes } : {}),
-          ...(isRescheduling && validatedData.scheduledAt ? { scheduledAt: new Date(validatedData.scheduledAt) } : {}),
-          ...(isCancelling
-            ? {
-                status: 'CANCELLED',
-                cancelledAt: new Date(),
-                cancellationReason: validatedData.cancellationReason || 'Session cancelled',
-              }
-            : {}),
-          ...(validatedData.status === 'COMPLETED' ? { completedAt: new Date() } : {}),
-          ...(validatedData.status && !isCancelling ? { status: validatedData.status } : {}),
-        },
-        include: sessionInclude,
-      });
+      // Use transaction for cancellation (session update + payment refund + audit log)
+      let updatedSession;
+      let refundApplied = false;
 
+      if (isCancelling) {
+        const refundPolicy = getRefundPolicy(hoursUntilSession, isAdmin);
+        const cancelReason = validatedData.cancellationReason || 'Session cancelled';
+
+        updatedSession = await prisma.$transaction(async (tx) => {
+          // 1. Cancel session
+          const cancelled = await tx.session.update({
+            where: { id },
+            data: {
+              status: 'CANCELLED',
+              cancelledAt: new Date(),
+              cancellationReason: cancelReason,
+            },
+            include: sessionInclude,
+          });
+
+          // 2. Refund payment if eligible and payment exists
+          if (refundPolicy.eligible && cancelled.payment?.id && cancelled.payment.status === 'COMPLETED') {
+            await tx.payment.update({
+              where: { id: cancelled.payment.id },
+              data: { status: 'REFUNDED' },
+            });
+            refundApplied = true;
+          }
+
+          // 3. Audit log
+          await tx.auditLog.create({
+            data: {
+              action: 'SESSION_CANCELLED',
+              userId: user.id,
+              entityId: id,
+              entityType: 'Session',
+              details: {
+                cancelledBy: user.id,
+                cancelledByRole: user.role,
+                reason: cancelReason,
+                hoursBeforeSession: Math.round(hoursUntilSession),
+                refundApplied,
+                refundType: refundPolicy.type,
+                paymentId: cancelled.payment?.id || null,
+              },
+            },
+          });
+
+          return cancelled;
+        });
+      } else {
+        // Non-cancellation updates (reschedule, notes, status change)
+        const auditAction = isRescheduling ? 'SESSION_RESCHEDULED' : 'SESSION_UPDATED';
+
+        updatedSession = await prisma.$transaction(async (tx) => {
+          const updated = await tx.session.update({
+            where: { id },
+            data: {
+              ...(validatedData.notes !== undefined ? { notes: validatedData.notes } : {}),
+              ...(isRescheduling && validatedData.scheduledAt ? { scheduledAt: new Date(validatedData.scheduledAt) } : {}),
+              ...(validatedData.status === 'COMPLETED' ? { completedAt: new Date() } : {}),
+              ...(validatedData.status && !isCancelling ? { status: validatedData.status } : {}),
+            },
+            include: sessionInclude,
+          });
+
+          await tx.auditLog.create({
+            data: {
+              action: auditAction,
+              userId: user.id,
+              entityId: id,
+              entityType: 'Session',
+              details: {
+                updatedBy: user.id,
+                updatedByRole: user.role,
+                changes: validatedData,
+                ...(isRescheduling ? { previousScheduledAt: session.scheduledAt.toISOString() } : {}),
+              },
+            },
+          });
+
+          return updated;
+        });
+      }
+
+      // Send email notifications to BOTH parties
       try {
         const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const clientName = `${updatedSession.client.firstName} ${updatedSession.client.lastName}`;
+        const therapistName = `${updatedSession.therapist.firstName} ${updatedSession.therapist.lastName}`;
 
         if (isCancelling) {
           const sessionDate = session.scheduledAt.toLocaleDateString('en-US', {
@@ -140,42 +221,48 @@ export default async function handler(
             month: 'long',
             day: 'numeric',
           });
+          const cancelReason = validatedData.cancellationReason || 'Session cancelled';
 
+          // Notify client
           await sendSessionCancellation(
             updatedSession.client.email,
-            `${updatedSession.client.firstName} ${updatedSession.client.lastName}`,
-            `${updatedSession.therapist.firstName} ${updatedSession.therapist.lastName}`,
+            clientName,
+            therapistName,
             sessionDate,
-            validatedData.cancellationReason || 'Session cancelled'
-          );
+            cancelReason
+          ).catch((e) => console.error('Client cancellation email error:', e));
+
+          // Notify therapist
+          await sendSessionCancellation(
+            updatedSession.therapist.email,
+            therapistName,
+            clientName,
+            sessionDate,
+            cancelReason
+          ).catch((e) => console.error('Therapist cancellation email error:', e));
         } else if (isRescheduling && validatedData.scheduledAt) {
           const oldDate = session.scheduledAt.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
           });
           const newDate = updatedSession.scheduledAt.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
           });
           const newTime = updatedSession.scheduledAt.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
+            hour: '2-digit', minute: '2-digit', hour12: true,
           });
+          const sessionUrl = updatedSession.meetingUrl || `${appUrl}/session/${updatedSession.id}`;
 
+          // Notify client
           await sendSessionRescheduled(
-            updatedSession.client.email,
-            `${updatedSession.client.firstName} ${updatedSession.client.lastName}`,
-            `${updatedSession.therapist.firstName} ${updatedSession.therapist.lastName}`,
-            oldDate,
-            newDate,
-            newTime,
-            updatedSession.meetingUrl || `${appUrl}/session/${updatedSession.id}`
-          );
+            updatedSession.client.email, clientName, therapistName,
+            oldDate, newDate, newTime, sessionUrl
+          ).catch((e) => console.error('Client reschedule email error:', e));
+
+          // Notify therapist
+          await sendSessionRescheduled(
+            updatedSession.therapist.email, therapistName, clientName,
+            oldDate, newDate, newTime, sessionUrl
+          ).catch((e) => console.error('Therapist reschedule email error:', e));
         }
       } catch (emailError) {
         console.error('Session email notification error:', emailError);
@@ -183,10 +270,16 @@ export default async function handler(
 
       return res.status(200).json({
         session: updatedSession,
-        message: 'Session updated successfully',
+        refundApplied,
+        message: isCancelling
+          ? refundApplied
+            ? 'Session cancelled. Payment has been marked for refund.'
+            : 'Session cancelled.'
+          : 'Session updated successfully',
       });
     }
 
+    // DELETE handler — redirect to PUT with CANCELLED status for consistency
     if (req.method === 'DELETE') {
       const hoursUntilSession = (new Date(session.scheduledAt).getTime() - Date.now()) / (1000 * 60 * 60);
 
@@ -198,39 +291,10 @@ export default async function handler(
         return res.status(400).json({ error: 'Sessions can only be cancelled at least 24 hours in advance.' });
       }
 
-      const cancelledSession = await prisma.session.update({
-        where: { id },
-        data: {
-          status: 'CANCELLED',
-          cancelledAt: new Date(),
-          cancellationReason: 'Session cancelled by user',
-        },
-        include: sessionInclude,
-      });
-
-      try {
-        const sessionDate = session.scheduledAt.toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-
-        await sendSessionCancellation(
-          cancelledSession.client.email,
-          `${cancelledSession.client.firstName} ${cancelledSession.client.lastName}`,
-          `${cancelledSession.therapist.firstName} ${cancelledSession.therapist.lastName}`,
-          sessionDate,
-          'Session cancelled by user'
-        );
-      } catch (emailError) {
-        console.error('Session cancellation email error:', emailError);
-      }
-
-      return res.status(200).json({
-        session: cancelledSession,
-        message: 'Session cancelled successfully',
-      });
+      // Reuse PUT cancellation logic by simulating the request
+      req.method = 'PUT';
+      req.body = { status: 'CANCELLED', cancellationReason: 'Session cancelled by user' };
+      return handler(req, res);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

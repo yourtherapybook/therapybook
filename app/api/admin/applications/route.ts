@@ -18,8 +18,16 @@ export async function GET(request: Request) {
             where: status && status !== 'ALL' ? { status: status as any } : undefined,
             include: {
                 user: {
-                    select: { firstName: true, lastName: true, email: true }
-                }
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        documents: {
+                            select: { id: true, type: true, status: true },
+                            orderBy: { createdAt: 'desc' },
+                        },
+                    },
+                },
             },
             orderBy: { updatedAt: 'desc' },
         });

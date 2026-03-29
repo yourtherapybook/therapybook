@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TraineeApplication, FormValidation } from '../../../types/trainee-application';
@@ -8,9 +8,11 @@ import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
 import { Label } from '../../ui/label';
+import { Badge } from '../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { MultiSelect } from '../../ui/multi-select';
 import { R2Uploader } from '../../ui/r2-uploader';
+import { FileText, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -49,6 +51,26 @@ const Step3PublicProfile: React.FC<Step3PublicProfileProps> = ({
   const [showOtherSkills, setShowOtherSkills] = useState(false);
   const [showOtherLanguages, setShowOtherLanguages] = useState(false);
   const [characterCount, setCharacterCount] = useState(0);
+  const [uploadedDocs, setUploadedDocs] = useState<{ id: string; title: string; type: string; status: string }[]>([]);
+
+  const refreshDocuments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/users/profile');
+      if (res.ok) {
+        const payload = await res.json();
+        const docs = payload.user?.documents || payload.user?.traineeApplication?.user?.documents || [];
+        setUploadedDocs(
+          docs.filter((d: any) => d.type !== 'PROFILE_PHOTO')
+        );
+      }
+    } catch {
+      // Silent — non-critical fetch
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshDocuments();
+  }, [refreshDocuments]);
 
   const form = useForm({
     resolver: zodResolver(publicProfileSchema),
@@ -453,6 +475,80 @@ const Step3PublicProfile: React.FC<Step3PublicProfileProps> = ({
               </FormItem>
             )}
           />
+
+          {/* Credential Documents Section */}
+          <div className="border-t border-neutral-200 pt-6 mt-6 space-y-5">
+            <div>
+              <h3 className="text-base font-semibold text-neutral-900">Credential Documents</h3>
+              <p className="text-sm text-neutral-500 mt-1">
+                Upload your certification and identification documents. These will be reviewed by our team before your profile goes live.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-neutral-700">Certification / Diploma</Label>
+                <p className="text-xs text-neutral-500 mb-2">
+                  Proof of your training program enrollment or completion (PDF or image)
+                </p>
+                <R2Uploader
+                  fileType="CERTIFICATION"
+                  accept="image/*,application/pdf"
+                  onChange={() => void refreshDocuments()}
+                  onUploadComplete={() => void refreshDocuments()}
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-neutral-700">Government-Issued ID</Label>
+                <p className="text-xs text-neutral-500 mb-2">
+                  Passport, national ID card, or driver&apos;s license (PDF or image)
+                </p>
+                <R2Uploader
+                  fileType="IDENTIFICATION"
+                  accept="image/*,application/pdf"
+                  onChange={() => void refreshDocuments()}
+                  onUploadComplete={() => void refreshDocuments()}
+                />
+              </div>
+            </div>
+
+            {/* Uploaded documents list */}
+            {uploadedDocs.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-neutral-700">Uploaded Documents</Label>
+                <div className="space-y-2">
+                  {uploadedDocs.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2.5 text-sm"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="h-4 w-4 text-neutral-400 shrink-0" />
+                        <span className="text-neutral-900 truncate">{doc.title}</span>
+                        <span className="text-neutral-400 text-xs shrink-0">{doc.type.replace('_', ' ')}</span>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={
+                          doc.status === 'VERIFIED'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : doc.status === 'REJECTED'
+                              ? 'bg-red-50 text-red-700 border-red-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }
+                      >
+                        {doc.status === 'VERIFIED' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                        {doc.status === 'REJECTED' && <XCircle className="h-3 w-3 mr-1" />}
+                        {doc.status === 'PENDING' && <Clock className="h-3 w-3 mr-1" />}
+                        {doc.status === 'VERIFIED' ? 'Verified' : doc.status === 'REJECTED' ? 'Rejected' : 'Pending Review'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </form>
       </Form>
 

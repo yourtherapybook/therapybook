@@ -38,6 +38,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         await sendPasswordReset(user.email, token);
 
+        // Audit log for security visibility
+        await prisma.auditLog.create({
+            data: {
+                action: 'PASSWORD_RESET_REQUESTED',
+                userId: user.id,
+                entityId: user.id,
+                entityType: 'User',
+                ipAddress: (typeof req.headers['x-forwarded-for'] === 'string'
+                    ? req.headers['x-forwarded-for'].split(',')[0]
+                    : req.socket.remoteAddress) || null,
+            },
+        }).catch(() => { /* non-blocking */ });
+
         res.status(200).json({ success: true, message: 'If an account matches this email, a reset link will be sent.' });
     } catch (error) {
         console.error('Forgot password error:', error);

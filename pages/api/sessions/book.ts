@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../../lib/prisma';
 import { authenticateUser } from '../../../lib/auth-middleware';
-import { DEFAULT_SESSION_CURRENCY, DEFAULT_SESSION_PRICE_EUR } from '../../../lib/pricing';
+import { getSessionPrice, getSessionCurrency } from '../../../lib/pricing';
 import { validateTherapistSlot } from '../../../lib/scheduling';
 import { z } from 'zod';
 
@@ -68,6 +68,8 @@ export default async function handler(
     }
 
     const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const sessionPrice = await getSessionPrice();
+    const sessionCurrency = await getSessionCurrency();
 
     const result = await prisma.$transaction(async (tx) => {
       const createdSession = await tx.session.create({
@@ -76,8 +78,8 @@ export default async function handler(
           therapistId: validatedData.therapistId,
           scheduledAt,
           duration: validatedData.duration,
-          price: DEFAULT_SESSION_PRICE_EUR,
-          currency: DEFAULT_SESSION_CURRENCY,
+          price: sessionPrice,
+          currency: sessionCurrency,
           status: 'SCHEDULED',
         },
       });
@@ -112,8 +114,8 @@ export default async function handler(
         data: {
           userId: user.id,
           sessionId: session.id,
-          amount: DEFAULT_SESSION_PRICE_EUR,
-          currency: DEFAULT_SESSION_CURRENCY,
+          amount: sessionPrice,
+          currency: sessionCurrency,
           status: 'PENDING',
           description: `Therapy session with ${therapist.firstName} ${therapist.lastName}`,
         },

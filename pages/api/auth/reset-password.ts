@@ -45,10 +45,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }),
             prisma.verificationToken.delete({
                 where: { identifier_token: { identifier: verificationToken.identifier, token } }
-            })
+            }),
+            prisma.auditLog.create({
+                data: {
+                    action: 'PASSWORD_RESET_COMPLETED',
+                    userId: user.id,
+                    entityId: user.id,
+                    entityType: 'User',
+                    ipAddress: (typeof req.headers['x-forwarded-for'] === 'string'
+                        ? req.headers['x-forwarded-for'].split(',')[0]
+                        : req.socket.remoteAddress) || null,
+                },
+            }),
         ]);
 
-        res.status(200).json({ success: true, message: 'Password reset completely successful' });
+        res.status(200).json({ success: true, message: 'Password reset successful' });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Validation constraint violated', details: error.issues });

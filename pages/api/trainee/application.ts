@@ -375,6 +375,39 @@ export default async function handler(
           });
         }
 
+        // Profile moderation: if the application was APPROVED and profile-sensitive
+        // fields are being changed, reset to UNDER_REVIEW so admin must re-approve.
+        const hasProfileChanges = Boolean(validatedData.publicProfile || validatedData.officeLocation);
+        if (hasProfileChanges && !isSubmitting) {
+          const existingApp = await tx.traineeApplication.findUnique({
+            where: { userId: user.id },
+            select: { status: true },
+          });
+
+          if (existingApp?.status === 'APPROVED') {
+            updateData.status = 'UNDER_REVIEW';
+            updateData.reviewedAt = null;
+            updateData.approvedAt = null;
+
+            // Audit the re-review trigger
+            await tx.auditLog.create({
+              data: {
+                action: 'PROFILE_EDIT_TRIGGERED_REREVIEW',
+                userId: user.id,
+                entityId: user.id,
+                entityType: 'TraineeApplication',
+                details: {
+                  reason: 'Approved trainee edited profile-sensitive fields',
+                  changedSections: [
+                    ...(validatedData.publicProfile ? ['publicProfile'] : []),
+                    ...(validatedData.officeLocation ? ['officeLocation'] : []),
+                  ],
+                },
+              },
+            });
+          }
+        }
+
         const application = await tx.traineeApplication.upsert({
           where: { userId: user.id },
           update: {
@@ -421,6 +454,11 @@ export default async function handler(
           throw new SubmissionValidationError(missingFields);
         }
 
+        const forwardedFor = req.headers['x-forwarded-for'];
+        const submissionIp = typeof forwardedFor === 'string'
+          ? forwardedFor.split(',')[0]
+          : req.socket.remoteAddress || null;
+
         await tx.traineeApplication.update({
           where: { id: application.id },
           data: {
@@ -428,6 +466,9 @@ export default async function handler(
             submittedAt: applicationWithRelations.submittedAt || new Date(),
             currentStep: 4,
             completedSteps: [1, 2, 3, 4],
+            agreementVersion: '2026-03-29-v1',
+            agreementAcceptedAt: new Date(),
+            agreementIpAddress: submissionIp,
           },
         });
 

@@ -102,6 +102,23 @@ const Matching: React.FC = () => {
     const results = buildMatches(providers, answers);
     setMatchingResults(results);
     setShowResults(true);
+
+    // Persist intake and match results server-side (fire-and-forget)
+    fetch('/api/intake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        responses: answers,
+        matches: results.map((r) => ({
+          therapistId: r.therapist.id,
+          therapistName: r.therapist.name,
+          score: r.matchPercentage,
+          reasons: r.reasons,
+        })),
+      }),
+    }).catch(() => {
+      // Non-blocking — matching UX works without persistence
+    });
   };
 
   const handleBookSession = (therapistId: string) => {

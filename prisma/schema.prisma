@@ -44,6 +44,10 @@ model User {
   auditLogs AuditLog[]
   documents Document[] @relation("UserDocuments")
 
+  // Supervision relationships
+  supervisorAssignments SupervisorAssignment[] @relation("SupervisorUser")
+  traineeAssignments    SupervisorAssignment[] @relation("TraineeUser")
+
   @@map("users")
 }
 
@@ -129,6 +133,10 @@ model TraineeApplication {
   minimumClientCommitment Boolean @default(false)
   termsOfService          Boolean @default(false)
   rejectionReason         String?
+  approvalReason          String?  // Admin reasoning for approval decision (audit evidence)
+  agreementVersion        String?  // Version of terms accepted (e.g., "2026-03-29-v1")
+  agreementAcceptedAt     DateTime? // When agreements were accepted
+  agreementIpAddress      String?  // IP address at time of acceptance
 
   // Timestamps
   createdAt   DateTime  @default(now())
@@ -179,6 +187,10 @@ model Session {
   // Pricing
   price    Decimal @db.Decimal(10, 2)
   currency String  @default("EUR")
+
+  // Reminder tracking
+  reminder24hSentAt DateTime?
+  reminder1hSentAt  DateTime?
 
   // Timestamps
   createdAt   DateTime  @default(now())
@@ -266,6 +278,69 @@ model Payment {
   session Session? @relation(fields: [sessionId], references: [id])
 
   @@map("payments")
+}
+
+// Intake / Matching
+model IntakeRecord {
+  id        String   @id @default(cuid())
+  userId    String?  // nullable for anonymous intake
+  responses Json     // questionnaire answers
+  matches   Json?    // computed match results (therapistId, score, reasons)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("intake_records")
+}
+
+// Platform Configuration
+model PlatformConfig {
+  id    String @id @default("default")
+  key   String @unique
+  value String // JSON-encoded value
+  label String? // Human-readable description
+
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_config")
+}
+
+// Consent Ledger
+model ConsentRecord {
+  id            String   @id @default(cuid())
+  userId        String?  // nullable for anonymous visitors
+  sessionId     String?  // browser session identifier
+  policyVersion String   // e.g., "2026-03-29-v1"
+  essential     Boolean  @default(true)
+  analytics     Boolean  @default(false)
+  marketing     Boolean  @default(false)
+  ipAddress     String?
+  userAgent     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("consent_records")
+}
+
+// Supervision
+model SupervisorAssignment {
+  id           String  @id @default(cuid())
+  supervisorId String
+  traineeId    String
+  isActive     Boolean @default(true)
+  notes        String? // Internal admin/supervisor notes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supervisor User @relation("SupervisorUser", fields: [supervisorId], references: [id], onDelete: Cascade)
+  trainee    User @relation("TraineeUser", fields: [traineeId], references: [id], onDelete: Cascade)
+
+  @@unique([supervisorId, traineeId])
+  @@index([traineeId])
+  @@map("supervisor_assignments")
 }
 
 // Enums

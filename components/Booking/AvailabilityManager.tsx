@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Plus, X, Save, Trash2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Plus, X, Save, Trash2, AlertCircle, Pencil } from 'lucide-react';
 
 interface Availability {
   id: string;
@@ -37,6 +37,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
     endTime: '17:00',
     isActive: true,
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [newUnavailableSlot, setNewUnavailableSlot] = useState({
     startDateTime: '',
@@ -210,6 +211,42 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
     }
   };
 
+  const startEditAvailability = (avail: Availability) => {
+    setEditingId(avail.id);
+    setNewAvailability({
+      dayOfWeek: avail.dayOfWeek,
+      startTime: avail.startTime,
+      endTime: avail.endTime,
+      isActive: avail.isActive,
+    });
+  };
+
+  const updateAvailability = async () => {
+    if (!editingId) return;
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await fetch(`/api/therapists/${therapistId}/availability`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ availabilityId: editingId, ...newAvailability }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update');
+      }
+      const data = await response.json();
+      setAvailability(availability.map((a) => (a.id === editingId ? data.availability : a)));
+      setSuccess('Availability updated');
+      setEditingId(null);
+      setNewAvailability({ dayOfWeek: 1, startTime: '09:00', endTime: '17:00', isActive: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
     return date.toLocaleString('en-US', {
@@ -257,39 +294,48 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
           <h3 className="text-lg font-semibold text-neutral-900">Weekly Availability</h3>
         </div>
 
-        {/* Current Availability */}
-        <div className="space-y-3 mb-6">
+        {/* Visual Week Calendar */}
+        <div className="mb-6">
           {availability.length === 0 ? (
-            <p className="text-neutral-500 text-center py-4">No availability set. Add your first availability slot below.</p>
+            <p className="text-neutral-500 text-center py-4">No availability set. Add your first slot below.</p>
           ) : (
-            availability.map((avail) => (
-              <div key={avail.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <span className="font-medium text-neutral-900">
-                    {daysOfWeek[avail.dayOfWeek]}
-                  </span>
-                  <span className="text-neutral-600">
-                    {avail.startTime} - {avail.endTime}
-                  </span>
-                  {!avail.isActive && (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">Inactive</span>
-                  )}
-                </div>
-                <button
-                  onClick={() => deleteAvailability(avail.id)}
-                  disabled={saving}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))
+            <div className="grid grid-cols-7 gap-1">
+              {daysOfWeek.map((day, dayIndex) => {
+                const daySlots = availability.filter((a) => a.dayOfWeek === dayIndex);
+                return (
+                  <div key={dayIndex} className="text-center">
+                    <div className="text-xs font-medium text-neutral-500 mb-1.5 uppercase">{day.slice(0, 3)}</div>
+                    <div className="min-h-[60px] space-y-1">
+                      {daySlots.length > 0 ? daySlots.map((avail) => (
+                        <button
+                          key={avail.id}
+                          onClick={() => startEditAvailability(avail)}
+                          className={`w-full rounded-md px-1 py-1.5 text-xs font-medium transition-colors ${
+                            editingId === avail.id
+                              ? 'bg-primary-500 text-white'
+                              : avail.isActive
+                                ? 'bg-primary-100 text-primary-800 hover:bg-primary-200'
+                                : 'bg-neutral-100 text-neutral-400'
+                          }`}
+                          title={`${avail.startTime} - ${avail.endTime} (click to edit)`}
+                        >
+                          <div>{avail.startTime}</div>
+                          <div>{avail.endTime}</div>
+                        </button>
+                      )) : (
+                        <div className="h-[60px] rounded-md border border-dashed border-neutral-200" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
         {/* Add New Availability */}
         <div className="border-t border-neutral-200 pt-6">
-          <h4 className="text-sm font-medium text-neutral-700 mb-3">Add New Availability</h4>
+          <h4 className="text-sm font-medium text-neutral-700 mb-3">{editingId ? 'Edit Availability' : 'Add New Availability'}</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <select
               value={newAvailability.dayOfWeek}
@@ -313,13 +359,25 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
               className="p-2 border border-neutral-300 rounded-lg"
             />
             <button
-              onClick={addAvailability}
+              onClick={editingId ? updateAvailability : addAvailability}
               disabled={saving}
               className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
             >
-              <Plus className="h-4 w-4" />
-              <span>Add</span>
+              {editingId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              <span>{editingId ? 'Save' : 'Add'}</span>
             </button>
+            {editingId && (
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setNewAvailability({ dayOfWeek: 1, startTime: '09:00', endTime: '17:00', isActive: true });
+                }}
+                className="flex items-center justify-center space-x-2 px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"
+              >
+                <X className="h-4 w-4" />
+                <span>Cancel</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

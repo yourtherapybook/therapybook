@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, CheckCircle2, Info, Video } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Info, Video, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import SessionManager from './SessionManager';
 
 interface SessionWorkspaceProps {
@@ -22,6 +23,7 @@ export default function SessionWorkspace({
 }: SessionWorkspaceProps) {
   const [session, setSession] = useState(initialSession);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [consentGiven, setConsentGiven] = useState(false);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -62,19 +64,55 @@ export default function SessionWorkspace({
                 Payment is still being finalized. This room unlocks after payment is marked complete.
               </div>
             ) : accessState.canJoin ? (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-neutral-200 overflow-hidden">
-                  <iframe
-                    title="TherapyBook session room"
-                    src={roomUrl}
-                    className="h-[560px] w-full"
-                    allow="camera; microphone; fullscreen; display-capture"
-                  />
+              consentGiven ? (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-neutral-200 overflow-hidden">
+                    <iframe
+                      title="TherapyBook session room"
+                      src={roomUrl}
+                      className="h-[560px] w-full"
+                      allow="camera; microphone; fullscreen; display-capture"
+                    />
+                  </div>
+                  <p className="text-sm text-neutral-500">
+                    This room is password-protected and only available to session participants.
+                  </p>
                 </div>
-                <p className="text-sm text-neutral-500">
-                  This meeting room is tied to your booked session link and is only available to session participants.
-                </p>
-              </div>
+              ) : (
+                <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="h-6 w-6 text-primary-500 mt-0.5 shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-neutral-900">Before you join</h3>
+                      <p className="text-sm text-neutral-600 mt-1">
+                        This is a private therapy session. By joining, you acknowledge:
+                      </p>
+                      <ul className="text-sm text-neutral-600 mt-3 space-y-2">
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary-500 font-bold mt-0.5">•</span>
+                          This session is confidential between you and your {userRole === 'client' ? 'therapist' : 'client'}.
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary-500 font-bold mt-0.5">•</span>
+                          Recording this session without all parties&apos; consent is prohibited.
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary-500 font-bold mt-0.5">•</span>
+                          Your session access is logged for safety and compliance purposes.
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setConsentGiven(true)}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Video className="h-4 w-4" />
+                    I understand — Join Session
+                  </Button>
+                </div>
+              )
             ) : (
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-900">
                 <div className="flex items-center gap-2 font-medium">

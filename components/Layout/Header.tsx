@@ -1,23 +1,42 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Heart, Menu, X } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { Heart, Menu, X, LayoutDashboard } from 'lucide-react';
 import BookingButton from '../Common/BookingButton';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
 
-  const navigation = [
+  const baseNavigation = [
     { name: 'Find Therapists', href: '/directory' },
     { name: 'Apply as Trainee', href: '/trainee-application' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'Take Assessment', href: '/matching' },
   ];
 
-  const isActive = (path: string) => pathname === path;
+  const navigation = useMemo(() => {
+    if (!session?.user) return baseNavigation;
+    const role = session.user.role;
+    const dashboardLink =
+      role === 'CLIENT'
+        ? { name: 'My Dashboard', href: '/client-dashboard' }
+        : role === 'TRAINEE'
+          ? { name: 'Dashboard', href: '/trainee-dashboard' }
+          : role === 'SUPERVISOR'
+            ? { name: 'Supervisor', href: '/supervisor-dashboard' }
+            : role === 'ADMIN'
+              ? { name: 'Admin', href: '/admin' }
+              : null;
+    if (!dashboardLink) return baseNavigation;
+    return [dashboardLink, ...baseNavigation];
+  }, [session]);
+
+  const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-neutral-200">

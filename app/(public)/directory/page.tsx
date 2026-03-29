@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Filter, Info, Loader2, Users } from 'lucide-react';
+import { Filter, Info, Loader2, Users, Search, ArrowUpDown } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import TherapistCard from '@/components/TherapistDirectory/TherapistCard';
 import FilterSidebar from '@/components/TherapistDirectory/FilterSidebar';
 import { FilterOptions, Therapist } from '@/types';
@@ -24,6 +25,8 @@ const Directory: React.FC = () => {
   const router = useRouter();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>(emptyFilters);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'availability'>('availability');
   const [providers, setProviders] = useState<Therapist[]>([]);
   const [filterOptions, setFilterOptions] = useState<ProviderDirectoryResponse['filters']>({ issueTypes: [], languages: [] });
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +56,22 @@ const Directory: React.FC = () => {
   }, []);
 
   const filteredTherapists = useMemo(() => {
-    return providers.filter((therapist) => {
+    const query = searchQuery.toLowerCase().trim();
+
+    const filtered = providers.filter((therapist) => {
+      // Text search across name, specializations, languages, bio
+      if (query) {
+        const searchable = [
+          therapist.name,
+          ...therapist.specializations,
+          ...therapist.languages,
+          therapist.bio,
+          therapist.credentials,
+          therapist.institutionOfStudy || '',
+        ].join(' ').toLowerCase();
+        if (!searchable.includes(query)) return false;
+      }
+
       if (filters.issueTypes.length > 0) {
         const hasMatchingSpecialization = therapist.specializations.some((specialization) =>
           filters.issueTypes.includes(specialization)
@@ -74,7 +92,20 @@ const Directory: React.FC = () => {
 
       return true;
     });
-  }, [filters, providers]);
+
+    // Sort
+    if (sortBy === 'availability') {
+      filtered.sort((a, b) => {
+        if (a.availability === 'available' && b.availability !== 'available') return -1;
+        if (a.availability !== 'available' && b.availability === 'available') return 1;
+        return a.name.localeCompare(b.name);
+      });
+    } else {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return filtered;
+  }, [filters, providers, searchQuery, sortBy]);
 
   const handleBookSession = (therapistId: string) => {
     router.push(`/booking?therapistId=${encodeURIComponent(therapistId)}`);
@@ -95,14 +126,14 @@ const Directory: React.FC = () => {
             <div>
               <h3 className="font-semibold text-blue-900 mb-2">About Our Trainee Practitioners</h3>
               <p className="text-blue-800 leading-relaxed">
-                All practitioners listed here are approved trainees enrolled in accredited institutions and operating under supervision.
-                Availability and profile details come directly from the live provider onboarding data.
+                All practitioners listed here are approved trainees whose credentials have been verified during onboarding.
+                Availability and profile details come directly from the live provider application data.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-neutral-900 mb-2">
@@ -126,6 +157,27 @@ const Directory: React.FC = () => {
                 Filter
               </button>
             </div>
+          </div>
+
+          {/* Search + Sort bar */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+              <Input
+                type="text"
+                placeholder="Search by name, specialty, or language..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <button
+              onClick={() => setSortBy(sortBy === 'availability' ? 'name' : 'availability')}
+              className="flex items-center gap-2 px-4 py-2 border border-neutral-200 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 transition-colors shrink-0"
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              Sort: {sortBy === 'availability' ? 'Available first' : 'Name A–Z'}
+            </button>
           </div>
         </div>
 

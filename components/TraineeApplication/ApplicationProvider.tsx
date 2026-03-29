@@ -465,10 +465,15 @@ export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({
     return validateAllSteps(state.application);
   }, [state.application]);
 
-  // Load application on mount
+  // Load application on mount — guarded to run only once per authenticated user
+  const hasLoadedRef = useRef(false);
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       loadApplication();
+    }
+    if (!isAuthenticated) {
+      hasLoadedRef.current = false;
     }
   }, [isAuthenticated, user, loadApplication]);
 

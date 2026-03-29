@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { DEFAULT_SESSION_PRICE_EUR } from '@/lib/pricing';
+import { getSessionPrice } from '@/lib/pricing';
 
 export async function GET() {
   try {
@@ -42,6 +42,8 @@ export async function GET() {
       ],
     });
 
+    const sessionPrice = await getSessionPrice();
+
     const transformedProviders = providers
       .filter((provider) => provider.traineeApplication)
       .map((provider) => {
@@ -60,7 +62,7 @@ export async function GET() {
           modality: application.modality || [],
           ageGroups: application.ageGroups || [],
           languages: application.languages || [],
-          hourlyRate: DEFAULT_SESSION_PRICE_EUR,
+          hourlyRate: sessionPrice,
           availability: provider.availability.length > 0 ? 'available' : 'offline',
           bio: application.personalStatement || 'Profile details will be available once this trainee completes onboarding.',
         };

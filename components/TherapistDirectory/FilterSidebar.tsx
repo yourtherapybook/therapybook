@@ -55,7 +55,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         <div className="flex items-center space-x-2">
           <button
             onClick={onClearFilters}
-            className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
+            className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors px-2 py-1 rounded-md hover:bg-primary-50"
           >
             Clear All
           </button>

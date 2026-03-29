@@ -1,106 +1,173 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Eye, CheckCircle, XCircle, Clock, AlertCircle, FileText } from 'lucide-react';
+
+import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { Eye, Loader2, CheckSquare, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+
+interface QueueApplication {
+  id: string;
+  status: string;
+  submittedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    documents?: { id: string; type: string; status: string }[];
+  };
+}
+
+const statusConfig: Record<string, { label: string; className: string }> = {
+  DRAFT: { label: "Draft", className: "bg-neutral-100 text-neutral-600 border-neutral-200" },
+  SUBMITTED: { label: "Submitted", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  UNDER_REVIEW: { label: "Under Review", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  APPROVED: { label: "Approved", className: "bg-green-50 text-green-700 border-green-200" },
+  REJECTED: { label: "Rejected", className: "bg-red-50 text-red-700 border-red-200" },
+};
+
+const FILTERS = ["ALL", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED"];
+
+function getAge(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Today";
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
+}
 
 export default function AdminApplicationsQueue() {
-    const [applications, setApplications] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('ALL');
-    const filterOptions = ['ALL', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'];
+  const [applications, setApplications] = useState<QueueApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState("SUBMITTED");
 
-    useEffect(() => {
-        fetchQueue();
-    }, [filter]);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/applications?status=${filter}`);
+      if (!res.ok) throw new Error("Failed to load applications");
+      const data = await res.json();
+      setApplications(data.applications || []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
 
-    const fetchQueue = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`/api/admin/applications?status=${filter}`);
-            if (res.ok) {
-                const data = await res.json();
-                setApplications(data.applications);
-            }
-        } catch (error) {
-            console.error('Failed fetching queue', error);
-        }
-        setLoading(false);
-    };
+  useEffect(() => { void load(); }, [load]);
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'SUBMITTED': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" /> Pending</span>;
-            case 'UNDER_REVIEW': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><AlertCircle className="w-3 h-3 mr-1" /> In Review</span>;
-            case 'APPROVED': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" /> Approved</span>;
-            case 'REJECTED': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" /> Rejected</span>;
-            default: return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800"><AlertCircle className="w-3 h-3 mr-1" /> {status}</span>;
-        }
-    };
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-neutral-900">Application Queue</h1>
+        <p className="text-sm text-neutral-500 mt-1">Review trainee applications. Verify documents before approving.</p>
+      </div>
 
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-neutral-900">Application Queue</h1>
-                    <p className="text-sm text-neutral-500">Review and resolve prospective trainee applications.</p>
-                </div>
-                <div className="flex bg-white rounded-lg shadow-sm border border-neutral-200 p-1">
-                    {filterOptions.map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${filter === f ? 'bg-primary-50 text-primary-700' : 'text-neutral-500 hover:text-neutral-900'}`}
-                        >
-                            {f}
-                        </button>
-                    ))}
-                </div>
+      {/* Filter tabs */}
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <Button
+            key={f}
+            variant={filter === f ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilter(f)}
+          >
+            {f === "ALL" ? "All" : statusConfig[f]?.label || f}
+          </Button>
+        ))}
+      </div>
+
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6 flex items-center gap-3 text-red-800">
+            <AlertCircle className="h-5 w-5" /> {error}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-16 text-neutral-500">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading applications...
             </div>
-
-            <div className="bg-white shadow-sm rounded-lg border border-neutral-200">
-                <table className="min-w-full divide-y divide-neutral-200">
-                    <thead className="bg-neutral-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Candidate</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Submitted</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">Operations</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-neutral-200">
-                        {loading ? (
-                            <tr><td colSpan={4} className="px-6 py-12 text-center text-neutral-500"><div className="animate-pulse flex justify-center"><FileText className="h-8 w-8 text-neutral-300" /></div></td></tr>
-                        ) : applications.length === 0 ? (
-                            <tr><td colSpan={4} className="px-6 py-12 text-center text-neutral-500">No applications match the current queue filter.</td></tr>
-                        ) : (
-                            applications.map((app) => (
-                                <tr key={app.id} className="hover:bg-neutral-50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <div className="ml-4">
-                                                <div className="text-sm font-medium text-neutral-900">{app.user.firstName} {app.user.lastName}</div>
-                                                <div className="text-sm text-neutral-500">{app.user.email}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {getStatusBadge(app.status)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                                        {new Date(app.updatedAt).toLocaleDateString()}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <Link href={`/admin/applications/${app.id}`} className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-primary-700 bg-primary-100 hover:bg-primary-200 transition-colors">
-                                            <Eye className="w-4 h-4 mr-1.5" />
-                                            Review
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+          ) : applications.length === 0 ? (
+            <div className="text-center py-16 text-neutral-500">
+              <CheckSquare className="h-8 w-8 mx-auto mb-3 text-neutral-300" />
+              <p className="text-sm">No applications match this filter.</p>
             </div>
-        </div>
-    );
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Candidate</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead>Documents</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {applications.map((app) => {
+                    const st = statusConfig[app.status] || statusConfig.DRAFT;
+                    const docs = (app.user.documents || []).filter((d) => d.type !== "PROFILE_PHOTO");
+                    const verifiedDocs = docs.filter((d) => d.status === "VERIFIED").length;
+                    const pendingDocs = docs.filter((d) => d.status === "PENDING").length;
+                    const hasDocs = docs.length > 0;
+
+                    return (
+                      <TableRow key={app.id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div className="font-medium text-neutral-900">
+                            {app.user.firstName} {app.user.lastName}
+                          </div>
+                          <div className="text-xs text-neutral-500">{app.user.email}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={st.className}>{st.label}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-neutral-600">
+                          <div>{getAge(app.submittedAt || app.createdAt)}</div>
+                        </TableCell>
+                        <TableCell>
+                          {hasDocs ? (
+                            <div className="text-xs space-y-0.5">
+                              <div className="text-green-700">{verifiedDocs} verified</div>
+                              {pendingDocs > 0 && (
+                                <div className="text-amber-700">{pendingDocs} pending</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-neutral-400">None</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/admin/applications/${app.id}`}>
+                              <Eye className="h-3.5 w-3.5" />
+                              Review
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

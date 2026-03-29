@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Shield, Users, FileText, CheckSquare, Activity, LogOut } from 'lucide-react';
+import { Shield, Users, FileText, CheckSquare, Activity, LogOut, CreditCard, ScrollText, FolderOpen } from 'lucide-react';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -18,18 +18,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { name: 'Applications', href: '/admin/applications', icon: CheckSquare },
         { name: 'Users', href: '/admin/users', icon: Users },
         { name: 'Sessions', href: '/admin/sessions', icon: FileText },
+        { name: 'Payments', href: '/admin/payments', icon: CreditCard },
+        { name: 'Documents', href: '/admin/documents', icon: FolderOpen },
+        { name: 'Audit Log', href: '/admin/audit', icon: ScrollText },
     ];
 
     return (
-        <div className="min-h-screen bg-neutral-100 flex">
-            {/* Sidebar Extranet */}
-            <aside className="w-64 bg-neutral-900 text-white flex flex-col flex-shrink-0">
-                <div className="h-16 flex items-center px-6 border-b border-neutral-800">
+        <div className="h-[100dvh] bg-neutral-100 flex">
+            {/* Sidebar — sticky, full viewport height */}
+            <aside className="w-64 sticky top-0 h-[100dvh] bg-neutral-900 text-white flex flex-col flex-shrink-0">
+                <div className="h-16 flex items-center px-6 border-b border-neutral-800 shrink-0">
                     <Shield className="h-6 w-6 text-primary-500 mr-2" />
                     <span className="text-lg font-bold">Admin Portal</span>
                 </div>
 
-                <nav className="flex-1 py-6 px-3 space-y-2">
+                <nav className="flex-1 overflow-y-auto min-h-0 py-6 px-3 space-y-2">
                     {navItems.map((item) => (
                         <Link
                             key={item.name}
@@ -42,7 +45,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-neutral-800 text-sm text-neutral-400">
+                <div className="p-4 border-t border-neutral-800 text-sm text-neutral-400 shrink-0">
                     <div className="mb-4 truncate px-3 font-medium text-neutral-300">{session.user.email}</div>
                     <SignOutButton className="flex w-full items-center justify-start px-3 py-2 font-medium rounded-lg text-red-400 hover:bg-neutral-800 transition-colors">
                         <LogOut className="h-5 w-5 mr-3" />
@@ -51,8 +54,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 </div>
             </aside>
 
-            {/* Admin Rendering Surface */}
-            <main className="flex-1 overflow-auto bg-neutral-50">
+            {/* Admin Rendering Surface — scrollable */}
+            <main className="flex-1 overflow-y-auto min-h-0 bg-neutral-50">
                 <div className="p-8 max-w-7xl mx-auto">
                     {children}
                 </div>

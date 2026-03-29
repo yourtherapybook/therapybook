@@ -36,6 +36,16 @@ export default async function handler(
               completedSteps: true,
             },
           },
+          documents: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              status: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          },
         },
       });
 
