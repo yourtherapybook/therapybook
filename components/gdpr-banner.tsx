@@ -2,102 +2,79 @@
 
 import { useState, useEffect } from 'react';
 import { useConsentStore } from '../lib/store/consent';
-import { Shield } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function GDPRBanner() {
     const { hasAnswered, acceptAll, declineAll, setConsent } = useConsentStore();
     const [mounted, setMounted] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
-
     const [prefs, setPrefs] = useState({ analytics: false, marketing: false });
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    useEffect(() => { setMounted(true); }, []);
 
     if (!mounted || hasAnswered) return null;
 
-    const handleSave = () => {
-        setConsent(prefs);
-    };
-
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 pb-8">
-            <div className="mx-auto max-w-4xl bg-white rounded-lg shadow-2xl border border-neutral-200 p-6 flex flex-col md:flex-row gap-6 items-start md:items-center">
-                <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="bg-primary/10 p-2 rounded-full">
-                            <Shield className="w-5 h-5 text-primary" />
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4">
+            <div className="mx-auto max-w-2xl bg-white rounded-xl shadow-lg border border-neutral-200 p-4">
+                {!showDetails ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <p className="text-sm text-neutral-600 flex-1">
+                            We use cookies to improve your experience.{' '}
+                            <button
+                                onClick={() => setShowDetails(true)}
+                                className="text-primary-600 hover:underline font-medium"
+                            >
+                                Settings
+                            </button>
+                        </p>
+                        <div className="flex gap-2 shrink-0">
+                            <Button variant="outline" size="sm" onClick={declineAll}>
+                                Decline
+                            </Button>
+                            <Button size="sm" onClick={acceptAll}>
+                                Accept
+                            </Button>
                         </div>
-                        <h2 className="text-xl font-bold text-neutral-900">Ihre Privatsphäre ist uns wichtig</h2>
                     </div>
-                    <p className="text-neutral-600 text-sm leading-relaxed mb-4">
-                        Wir verwenden Cookies, um unsere Website für Sie optimal zu gestalten, die Performance zu analysieren und relevante Inhalte bereitzustellen. Klicken Sie auf "Alle akzeptieren", um zuzustimmen, oder auf "Einstellungen", um Ihre Präferenzen anzupassen. Ihre Einwilligung können Sie jederzeit in unserer <a href="/privacy" className="text-primary hover:underline font-medium min-h-[44px] inline-flex items-center px-1">Datenschutzerklärung</a> widerrufen.
-                    </p>
-
-                    {showDetails && (
-                        <div className="space-y-4 border-t border-neutral-100 pt-4 mb-4">
-                            <div className="flex items-center justify-between min-h-[44px]">
+                ) : (
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-neutral-900">Cookie Preferences</span>
+                            <a href="/privacy" className="text-xs text-primary-600 hover:underline">Privacy Policy</a>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between py-1">
                                 <div>
-                                    <h4 className="font-semibold text-neutral-900 text-sm">Notwendig</h4>
-                                    <p className="text-xs text-neutral-500">Erforderlich für die Grundfunktionen.</p>
+                                    <div className="text-sm font-medium text-neutral-900">Essential</div>
+                                    <div className="text-xs text-neutral-500">Required for core functionality</div>
                                 </div>
-                                <input type="checkbox" checked disabled className="w-5 h-5 rounded text-primary" />
+                                <input type="checkbox" checked disabled className="h-4 w-4 rounded" />
                             </div>
-                            <div className="flex items-center justify-between min-h-[44px]">
+                            <div className="flex items-center justify-between py-1">
                                 <div>
-                                    <h4 className="font-semibold text-neutral-900 text-sm">Analyse & Statistik</h4>
-                                    <p className="text-xs text-neutral-500">Helfen uns die Website zu verbessern.</p>
+                                    <div className="text-sm font-medium text-neutral-900">Analytics</div>
+                                    <div className="text-xs text-neutral-500">Help us improve the platform</div>
                                 </div>
                                 <input
                                     type="checkbox"
                                     checked={prefs.analytics}
                                     onChange={(e) => setPrefs(prev => ({ ...prev, analytics: e.target.checked }))}
-                                    className="w-5 h-5 rounded border-neutral-300 text-primary cursor-pointer"
-                                    aria-label="Analyse Cookies"
+                                    className="h-4 w-4 rounded border-neutral-300 cursor-pointer"
+                                    aria-label="Analytics cookies"
                                 />
                             </div>
                         </div>
-                    )}
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
-                    {!showDetails ? (
-                        <Button
-                            variant="outline"
-                            size="lg"
-                            onClick={() => setShowDetails(true)}
-                            className="min-h-[44px]"
-                        >
-                            Einstellungen
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="outline"
-                            size="lg"
-                            onClick={handleSave}
-                            className="min-h-[44px]"
-                        >
-                            Auswahl speichern
-                        </Button>
-                    )}
-                    <Button
-                        variant="secondary"
-                        size="lg"
-                        onClick={declineAll}
-                        className="min-h-[44px]"
-                    >
-                        Ablehnen
-                    </Button>
-                    <Button
-                        size="lg"
-                        onClick={acceptAll}
-                        className="min-h-[44px]"
-                    >
-                        Alle akzeptieren
-                    </Button>
-                </div>
+                        <div className="flex justify-end gap-2 pt-1">
+                            <Button variant="outline" size="sm" onClick={declineAll}>
+                                Decline All
+                            </Button>
+                            <Button size="sm" onClick={() => setConsent(prefs)}>
+                                Save Preferences
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
