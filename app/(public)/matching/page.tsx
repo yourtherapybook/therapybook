@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import Questionnaire from '@/components/MatchingFlow/Questionnaire';
 import Results from '@/components/MatchingFlow/Results';
 import { MatchingResult, Therapist } from '@/types';
+import { analytics } from '@/lib/analytics';
 
 const normalize = (value: string) => value.toLowerCase().trim();
 
@@ -102,6 +103,7 @@ const Matching: React.FC = () => {
     const results = buildMatches(providers, answers);
     setMatchingResults(results);
     setShowResults(true);
+    analytics.matchingCompleted(results.length);
 
     // Persist intake and match results server-side (fire-and-forget)
     fetch('/api/intake', {

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { Therapist } from '@/types';
+import { analytics } from '@/lib/analytics';
 
 interface TimeSlot {
   id: string;
@@ -118,6 +119,7 @@ function BookingContent() {
 
         if (payload.payment.status === 'COMPLETED') {
           setPaymentStatus('completed');
+          analytics.checkoutCompleted(payload.payment.session?.id || '', Number(payload.payment.amount || 0));
           return;
         }
 
@@ -154,6 +156,7 @@ function BookingContent() {
     setSelectedSlot(slot);
     setSelectedDate(date);
     setError(null);
+    analytics.slotSelected(selectedTherapistId, slot.datetime);
   };
 
   const handleCheckout = async () => {
@@ -194,6 +197,7 @@ function BookingContent() {
         throw new Error(checkoutPayload.error || 'Failed to start secure checkout');
       }
 
+      analytics.checkoutStarted(selectedTherapist!.id, selectedTherapist!.hourlyRate);
       window.location.href = checkoutPayload.checkoutUrl;
     } catch (checkoutError) {
       setError(checkoutError instanceof Error ? checkoutError.message : 'Checkout failed');

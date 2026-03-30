@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import TherapistCard from '@/components/TherapistDirectory/TherapistCard';
 import FilterSidebar from '@/components/TherapistDirectory/FilterSidebar';
 import { FilterOptions, Therapist } from '@/types';
+import { analytics } from '@/lib/analytics';
 
 interface ProviderDirectoryResponse {
   providers: Therapist[];
@@ -49,6 +50,7 @@ const Directory: React.FC = () => {
         setLoadError(error instanceof Error ? error.message : 'Failed to load directory');
       } finally {
         setIsLoading(false);
+        analytics.directoryViewed();
       }
     };
 
