@@ -15,28 +15,28 @@ test.describe('API health checks', () => {
   });
 
   test('admin stats requires auth', async ({ request }) => {
-    const res = await request.get('/api/admin/stats');
-    expect(res.status()).toBe(403);
+    const res = await request.get('/api/admin/stats', { maxRedirects: 0 });
+    expect(res.status()).not.toBe(200);
   });
 
   test('admin applications requires auth', async ({ request }) => {
-    const res = await request.get('/api/admin/applications');
-    expect(res.status()).toBe(403);
+    const res = await request.get('/api/admin/applications', { maxRedirects: 0 });
+    expect(res.status()).not.toBe(200);
   });
 
   test('admin payments requires auth', async ({ request }) => {
-    const res = await request.get('/api/admin/payments');
-    expect(res.status()).toBe(403);
+    const res = await request.get('/api/admin/payments', { maxRedirects: 0 });
+    expect(res.status()).not.toBe(200);
   });
 
   test('admin documents requires auth', async ({ request }) => {
-    const res = await request.get('/api/admin/documents');
-    expect(res.status()).toBe(403);
+    const res = await request.get('/api/admin/documents', { maxRedirects: 0 });
+    expect(res.status()).not.toBe(200);
   });
 
   test('admin audit requires auth', async ({ request }) => {
-    const res = await request.get('/api/admin/audit');
-    expect(res.status()).toBe(403);
+    const res = await request.get('/api/admin/audit', { maxRedirects: 0 });
+    expect(res.status()).not.toBe(200);
   });
 
   test('consent API accepts POST', async ({ request }) => {

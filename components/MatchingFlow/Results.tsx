@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Heart, Calendar, ArrowRight } from 'lucide-react';
+import { Button } from '../ui/button';
 import { MatchingResult } from '../../types';
 
 interface ResultsProps {
@@ -107,13 +108,13 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
                   </div>
 
                   <div className="space-y-2">
-                    <button
+                    <Button
                       onClick={() => onBookSession(result.therapist.id)}
-                      className="w-full bg-primary-500 hover:bg-primary-600 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
+                      className="w-full"
                     >
-                      <Calendar className="h-4 w-4 mr-2" />
+                      <Calendar className="h-4 w-4" />
                       Book Session
-                    </button>
+                    </Button>
                     <Link
                       href="/directory"
                       className="block w-full border border-neutral-200 hover:bg-neutral-50 text-neutral-700 py-3 px-4 rounded-lg font-medium transition-colors text-center"
@@ -136,13 +137,13 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
 
       {/* Bottom actions */}
       <div className="text-center space-y-4">
-        <button
+        <Button
+          variant="link"
           onClick={onRetakeAssessment}
-          className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center"
         >
           Not satisfied with these matches?
           <ArrowRight className="h-4 w-4 ml-1" />
-        </button>
+        </Button>
         <p className="text-sm text-neutral-500">
           You can retake the assessment or continue into the full directory.
         </p>

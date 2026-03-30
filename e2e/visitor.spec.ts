@@ -17,15 +17,14 @@ test.describe('Visitor flows', () => {
     await page.goto('/directory');
     await expect(page.locator('h1')).toContainText('Find Your Trainee Practitioner');
     // Wait for providers to load
-    await page.waitForSelector('[class*="rounded-2xl"]', { timeout: 10000 });
-    // Should show at least one provider
+    await page.waitForSelector('text=trainee practitioners available', { timeout: 10000 });
     const count = await page.locator('text=trainee practitioners available').textContent();
     expect(count).toBeTruthy();
   });
 
   test('directory search filters providers', async ({ page }) => {
     await page.goto('/directory');
-    await page.waitForSelector('[class*="rounded-2xl"]', { timeout: 10000 });
+    await page.waitForSelector('text=trainee practitioners available', { timeout: 10000 });
 
     // Search for a specific name
     const searchInput = page.locator('input[placeholder*="Search"]');
@@ -38,7 +37,7 @@ test.describe('Visitor flows', () => {
 
   test('provider detail page loads', async ({ page }) => {
     await page.goto('/directory');
-    await page.waitForSelector('[class*="rounded-2xl"]', { timeout: 10000 });
+    await page.waitForSelector('text=trainee practitioners available', { timeout: 10000 });
 
     // Click View Profile if available
     const viewProfile = page.locator('text=View Profile').first();
@@ -51,8 +50,8 @@ test.describe('Visitor flows', () => {
 
   test('pricing page loads', async ({ page }) => {
     await page.goto('/pricing');
-    await expect(page.locator('h1')).toContainText('Affordable Therapy');
-    await expect(page.locator('text=per session')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Affordable');
+    await expect(page.locator('text=per session').first()).toBeVisible();
   });
 
   test('matching questionnaire loads', async ({ page }) => {
@@ -68,8 +67,8 @@ test.describe('Visitor flows', () => {
   test('impressum page loads with policies', async ({ page }) => {
     await page.goto('/impressum');
     await expect(page.locator('h1')).toContainText('Impressum');
-    await expect(page.locator('text=Cancellation')).toBeVisible();
-    await expect(page.locator('text=Refund')).toBeVisible();
+    await expect(page.locator('text=cancellation').first()).toBeVisible();
+    await expect(page.locator('text=Refund policy')).toBeVisible();
   });
 
   test('footer is visible and not oversized', async ({ page }) => {

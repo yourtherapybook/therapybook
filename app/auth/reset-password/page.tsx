@@ -3,6 +3,8 @@ import React, { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Lock, Eye, EyeOff, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 function ResetPasswordContent() {
     const searchParams = useSearchParams();
@@ -80,26 +82,28 @@ function ResetPasswordContent() {
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Lock className="h-5 w-5 text-neutral-400" />
                                 </div>
-                                <input
+                                <Input
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full pl-10 pr-10 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                    className="pl-10 pr-10"
                                     placeholder="••••••••"
                                 />
-                                <button
+                                <Button
                                     type="button"
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                    className="absolute inset-y-0 right-0 h-full px-3"
                                 >
                                     {showPassword ? (
                                         <EyeOff className="h-4 w-4 text-neutral-400" />
                                     ) : (
                                         <Eye className="h-4 w-4 text-neutral-400" />
                                     )}
-                                </button>
+                                </Button>
                             </div>
                             <p className="mt-2 text-xs text-neutral-500">Must be at least 8 characters long</p>
                         </div>
@@ -110,13 +114,9 @@ function ResetPasswordContent() {
                             </div>
                         )}
 
-                        <button
-                            type="submit"
-                            disabled={status === 'loading'}
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none disabled:opacity-50"
-                        >
+                        <Button type="submit" disabled={status === 'loading'} className="w-full">
                             {status === 'loading' ? 'Updating...' : 'Reset Password'}
-                        </button>
+                        </Button>
                     </form>
                 </>
             )}

@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Filter, Info, Loader2, Users, Search, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import TherapistCard from '@/components/TherapistDirectory/TherapistCard';
 import FilterSidebar from '@/components/TherapistDirectory/FilterSidebar';
 import { FilterOptions, Therapist } from '@/types';
@@ -151,13 +152,14 @@ const Directory: React.FC = () => {
                   {activeFilterCount} filters active
                 </span>
               )}
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setIsFilterOpen(true)}
-                className="md:hidden flex items-center px-4 py-2 bg-white border-2 border-neutral-200 hover:border-primary-500 text-neutral-700 rounded-lg transition-colors"
+                className="md:hidden"
               >
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4" />
                 Filter
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -173,13 +175,14 @@ const Directory: React.FC = () => {
                 className="pl-10"
               />
             </div>
-            <button
+            <Button
+              variant="outline"
               onClick={() => setSortBy(sortBy === 'availability' ? 'name' : 'availability')}
-              className="flex items-center gap-2 px-4 py-2 border border-neutral-200 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 transition-colors shrink-0"
+              className="shrink-0"
             >
               <ArrowUpDown className="h-4 w-4" />
               Sort: {sortBy === 'availability' ? 'Available first' : 'Name A–Z'}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -210,12 +213,9 @@ const Directory: React.FC = () => {
                   <p className="text-neutral-600 mb-4">
                     {loadError}
                   </p>
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                  >
+                  <Button onClick={() => window.location.reload()}>
                     Retry
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : filteredTherapists.length === 0 ? (
@@ -231,12 +231,9 @@ const Directory: React.FC = () => {
                       : 'Try adjusting your filters to see more results.'}
                   </p>
                   {providers.length > 0 && (
-                    <button
-                      onClick={handleClearFilters}
-                      className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                    >
+                    <Button onClick={handleClearFilters}>
                       Clear Filters
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

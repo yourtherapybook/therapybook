@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Mail, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
@@ -62,13 +64,13 @@ export default function ForgotPasswordPage() {
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Mail className="h-5 w-5 text-neutral-400" />
                                 </div>
-                                <input
+                                <Input
                                     id="email"
                                     type="email"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                    className="pl-10"
                                     placeholder="you@example.com"
                                 />
                             </div>
@@ -80,13 +82,9 @@ export default function ForgotPasswordPage() {
                             </div>
                         )}
 
-                        <button
-                            type="submit"
-                            disabled={status === 'loading'}
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none disabled:opacity-50"
-                        >
+                        <Button type="submit" disabled={status === 'loading'} className="w-full">
                             {status === 'loading' ? 'Sending...' : 'Send reset link'}
-                        </button>
+                        </Button>
                     </form>
 
                     <div className="mt-6 text-center">

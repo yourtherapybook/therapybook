@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useConsentStore } from '../lib/store/consent';
 import { Button } from './ui/button';
+import { Checkbox } from './ui/checkbox';
 
 export function GDPRBanner() {
     const { hasAnswered, acceptAll, declineAll, setConsent } = useConsentStore();
@@ -49,18 +50,16 @@ export function GDPRBanner() {
                                     <div className="text-sm font-medium text-neutral-900">Essential</div>
                                     <div className="text-xs text-neutral-500">Required for core functionality</div>
                                 </div>
-                                <input type="checkbox" checked disabled className="h-4 w-4 rounded" />
+                                <Checkbox checked disabled />
                             </div>
                             <div className="flex items-center justify-between py-1">
                                 <div>
                                     <div className="text-sm font-medium text-neutral-900">Analytics</div>
                                     <div className="text-xs text-neutral-500">Help us improve the platform</div>
                                 </div>
-                                <input
-                                    type="checkbox"
+                                <Checkbox
                                     checked={prefs.analytics}
-                                    onChange={(e) => setPrefs(prev => ({ ...prev, analytics: e.target.checked }))}
-                                    className="h-4 w-4 rounded border-neutral-300 cursor-pointer"
+                                    onCheckedChange={(checked) => setPrefs(prev => ({ ...prev, analytics: !!checked }))}
                                     aria-label="Analytics cookies"
                                 />
                             </div>

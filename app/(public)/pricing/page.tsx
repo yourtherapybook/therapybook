@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import BookingButton from '@/components/Common/BookingButton';
+import { Button } from '@/components/ui/button';
 import {
   Calculator,
   Euro,
@@ -106,15 +107,15 @@ const Pricing: React.FC = () => {
                   <span className="text-sm text-neutral-600">{selectedSessions} sessions</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setSelectedSessions((value) => Math.max(1, value - 1))} className="rounded-full border border-neutral-200 p-2 hover:bg-neutral-50">
+                  <Button variant="outline" size="icon" className="rounded-full" onClick={() => setSelectedSessions((value) => Math.max(1, value - 1))}>
                     <Minus className="h-4 w-4" />
-                  </button>
+                  </Button>
                   <div className="flex-1 h-2 rounded-full bg-neutral-100 overflow-hidden">
                     <div className="h-full bg-primary-500" style={{ width: `${Math.min(100, (selectedSessions / 20) * 100)}%` }} />
                   </div>
-                  <button onClick={() => setSelectedSessions((value) => Math.min(20, value + 1))} className="rounded-full border border-neutral-200 p-2 hover:bg-neutral-50">
+                  <Button variant="outline" size="icon" className="rounded-full" onClick={() => setSelectedSessions((value) => Math.min(20, value + 1))}>
                     <Plus className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
