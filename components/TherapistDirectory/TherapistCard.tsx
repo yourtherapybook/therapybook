@@ -27,7 +27,7 @@ const TherapistCard: React.FC<TherapistCardProps> = ({ therapist, onBookSession 
       : 'Availability not published';
 
   return (
-    <div className="bg-white rounded-2xl shadow-subtle hover:shadow-hover transition-all duration-300 overflow-hidden border border-neutral-100">
+    <div className="bg-white rounded-xl shadow-subtle hover:shadow-hover transition-all duration-300 overflow-hidden border border-neutral-100">
       <div className="p-6 pb-4">
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center space-x-4">

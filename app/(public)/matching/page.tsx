@@ -158,11 +158,11 @@ const Matching: React.FC = () => {
             </div>
 
             {providerError ? (
-              <div className="mx-auto max-w-2xl rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-800">
+              <div className="mx-auto max-w-2xl rounded-xl border border-red-200 bg-red-50 p-6 text-center text-red-800">
                 {providerError}
               </div>
             ) : providers.length === 0 ? (
-              <div className="mx-auto max-w-2xl rounded-2xl border border-neutral-200 bg-white p-8 text-center">
+              <div className="mx-auto max-w-2xl rounded-xl border border-neutral-200 bg-white p-8 text-center">
                 <h2 className="text-xl font-semibold text-neutral-900 mb-2">No providers available yet</h2>
                 <p className="text-neutral-600">The matching flow will unlock once approved trainees publish their profiles.</p>
               </div>

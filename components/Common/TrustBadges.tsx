@@ -85,11 +85,11 @@ const TrustBadges: React.FC<TrustBadgesProps> = ({ variant = 'inline', showAll =
           return (
             <div key={item.title} className="text-center">
               {item.href.startsWith('tel:') ? (
-                <a href={item.href} className="block rounded-2xl p-2 transition-colors hover:bg-neutral-50">
+                <a href={item.href} className="block rounded-xl p-2 transition-colors hover:bg-neutral-50">
                   {content}
                 </a>
               ) : (
-                <Link href={item.href} className="block rounded-2xl p-2 transition-colors hover:bg-neutral-50">
+                <Link href={item.href} className="block rounded-xl p-2 transition-colors hover:bg-neutral-50">
                   {content}
                 </Link>
               )}

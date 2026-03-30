@@ -157,7 +157,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-subtle p-6 border border-neutral-100">
+    <div className="bg-white rounded-xl shadow-subtle p-6 border border-neutral-100">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2">
           <Calendar className="h-5 w-5 text-primary-500" />

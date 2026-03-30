@@ -13,7 +13,7 @@ const Hero: React.FC = () => {
         <div className="lg:grid lg:grid-cols-2 lg:gap-8 items-center">
           {/* Content */}
           <div className="mb-12 lg:mb-0">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-neutral-900 tracking-tight">
               Find a Supervised{' '}
               <span className="text-primary-500">Trainee Therapist</span>{' '}
               Who Fits
@@ -52,11 +52,11 @@ const Hero: React.FC = () => {
 
           {/* Illustration/Image */}
           <div className="relative">
-            <div className="aspect-square bg-gradient-to-br from-primary-100 to-primary-200 rounded-3xl p-8 shadow-subtle">
+            <div className="aspect-square bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl p-8 shadow-subtle">
               <img
                 src="https://images.pexels.com/photos/7176026/pexels-photo-7176026.jpeg?auto=compress&cs=tinysrgb&w=800"
                 alt="Therapy session illustration"
-                className="w-full h-full object-cover rounded-2xl"
+                className="w-full h-full object-cover rounded-xl"
               />
             </div>
             

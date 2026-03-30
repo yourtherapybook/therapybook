@@ -56,7 +56,7 @@ const Process: React.FC = () => {
                   <div className="hidden lg:block absolute top-16 left-1/2 w-full h-0.5 bg-neutral-200 transform translate-x-8 z-0"></div>
                 )}
                 
-                <div className="relative bg-white p-6 rounded-2xl shadow-subtle hover:shadow-hover transition-all duration-300 border border-neutral-100">
+                <div className="relative bg-white p-6 rounded-xl shadow-subtle hover:shadow-hover transition-all duration-300 border border-neutral-100">
                   {/* Step number */}
                   <div className="absolute -top-3 -left-3 w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
                     {index + 1}
@@ -82,7 +82,7 @@ const Process: React.FC = () => {
 
         {/* Bottom CTA */}
         <div className="text-center mt-16">
-          <div className="bg-primary-50 rounded-2xl p-8 inline-block">
+          <div className="bg-primary-50 rounded-xl p-8 inline-block">
             <h3 className="text-2xl font-semibold text-neutral-900 mb-2">
               Ready to get started?
             </h3>

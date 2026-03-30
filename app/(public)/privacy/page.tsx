@@ -17,7 +17,7 @@ const PrivacyPolicy: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-subtle p-8 space-y-12">
+        <div className="bg-white rounded-xl shadow-subtle p-8 space-y-12">
           <section id="privacy-rights">
             <div className="flex items-center space-x-3 mb-6">
               <FileText className="h-6 w-6 text-blue-600" />

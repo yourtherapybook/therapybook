@@ -5,7 +5,7 @@ const SupportCTA: React.FC = () => {
   return (
     <section className="py-16 bg-white">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-8 sm:p-10">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-8 sm:p-10">
           <div className="text-center mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-3">
               Have questions before booking?

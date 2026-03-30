@@ -202,7 +202,7 @@ const Directory: React.FC = () => {
               </div>
             ) : loadError ? (
               <div className="text-center py-12">
-                <div className="bg-white rounded-2xl shadow-subtle p-8">
+                <div className="bg-white rounded-xl shadow-subtle p-8">
                   <Users className="h-16 w-16 text-neutral-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-neutral-900 mb-2">
                     Directory unavailable
@@ -220,7 +220,7 @@ const Directory: React.FC = () => {
               </div>
             ) : filteredTherapists.length === 0 ? (
               <div className="text-center py-12">
-                <div className="bg-white rounded-2xl shadow-subtle p-8">
+                <div className="bg-white rounded-xl shadow-subtle p-8">
                   <Users className="h-16 w-16 text-neutral-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-neutral-900 mb-2">
                     No trainee practitioners found

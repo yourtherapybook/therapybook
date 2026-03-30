@@ -287,7 +287,10 @@ function BookingContent() {
                     const res = await fetch('/api/auth/resend-verification', { method: 'POST' });
                     if (res.ok) {
                       setError(null);
-                      alert('Verification email sent! Check your inbox.');
+                      setError(null);
+                      // Show inline success (reuse error card slot temporarily)
+                      const btn = document.activeElement as HTMLButtonElement;
+                      if (btn) { btn.textContent = 'Email Sent!'; btn.disabled = true; }
                     } else {
                       const data = await res.json();
                       setError(data.error || 'Failed to resend');

@@ -44,9 +44,9 @@ const Testimonials: React.FC = () => {
             return (
               <div
                 key={highlight.title}
-                className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-subtle"
+                className="rounded-xl border border-neutral-200 bg-white p-6 shadow-subtle"
               >
-                <div className="mb-4 inline-flex rounded-2xl bg-primary-50 p-3 text-primary-600">
+                <div className="mb-4 inline-flex rounded-xl bg-primary-50 p-3 text-primary-600">
                   <Icon className="h-6 w-6" />
                 </div>
                 <h3 className="text-lg font-semibold text-neutral-900 mb-2">{highlight.title}</h3>

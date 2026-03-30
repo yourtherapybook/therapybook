@@ -1,6 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, X, Save, Trash2, AlertCircle, Pencil } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 interface Availability {
   id: string;
@@ -261,7 +265,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-subtle p-6 border border-neutral-100">
+      <div className="bg-white rounded-xl shadow-subtle p-6 border border-neutral-100">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
         </div>
@@ -288,7 +292,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
       )}
 
       {/* Regular Availability */}
-      <div className="bg-white rounded-2xl shadow-subtle p-6 border border-neutral-100">
+      <div className="bg-white rounded-xl shadow-subtle p-6 border border-neutral-100">
         <div className="flex items-center space-x-2 mb-6">
           <Calendar className="h-5 w-5 text-primary-500" />
           <h3 className="text-lg font-semibold text-neutral-900">Weekly Availability</h3>
@@ -337,53 +341,57 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
         <div className="border-t border-neutral-200 pt-6">
           <h4 className="text-sm font-medium text-neutral-700 mb-3">{editingId ? 'Edit Availability' : 'Add New Availability'}</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <select
-              value={newAvailability.dayOfWeek}
-              onChange={(e) => setNewAvailability({ ...newAvailability, dayOfWeek: parseInt(e.target.value) })}
-              className="p-2 border border-neutral-300 rounded-lg"
+            <Select
+              value={String(newAvailability.dayOfWeek)}
+              onValueChange={(value) => setNewAvailability({ ...newAvailability, dayOfWeek: parseInt(value) })}
             >
-              {daysOfWeek.map((day, index) => (
-                <option key={index} value={index}>{day}</option>
-              ))}
-            </select>
-            <input
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {daysOfWeek.map((day, index) => (
+                  <SelectItem key={index} value={String(index)}>{day}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
               type="time"
               value={newAvailability.startTime}
               onChange={(e) => setNewAvailability({ ...newAvailability, startTime: e.target.value })}
-              className="p-2 border border-neutral-300 rounded-lg"
             />
-            <input
+            <Input
               type="time"
               value={newAvailability.endTime}
               onChange={(e) => setNewAvailability({ ...newAvailability, endTime: e.target.value })}
-              className="p-2 border border-neutral-300 rounded-lg"
             />
-            <button
-              onClick={editingId ? updateAvailability : addAvailability}
-              disabled={saving}
-              className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
-            >
-              {editingId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              <span>{editingId ? 'Save' : 'Add'}</span>
-            </button>
-            {editingId && (
-              <button
-                onClick={() => {
-                  setEditingId(null);
-                  setNewAvailability({ dayOfWeek: 1, startTime: '09:00', endTime: '17:00', isActive: true });
-                }}
-                className="flex items-center justify-center space-x-2 px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"
+            <div className="flex gap-2">
+              <Button
+                onClick={editingId ? updateAvailability : addAvailability}
+                disabled={saving}
+                className="flex-1"
               >
-                <X className="h-4 w-4" />
-                <span>Cancel</span>
-              </button>
-            )}
+                {editingId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {editingId ? 'Save' : 'Add'}
+              </Button>
+              {editingId && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingId(null);
+                    setNewAvailability({ dayOfWeek: 1, startTime: '09:00', endTime: '17:00', isActive: true });
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                  Cancel
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Unavailable Slots */}
-      <div className="bg-white rounded-2xl shadow-subtle p-6 border border-neutral-100">
+      <div className="bg-white rounded-xl shadow-subtle p-6 border border-neutral-100">
         <div className="flex items-center space-x-2 mb-6">
           <X className="h-5 w-5 text-red-500" />
           <h3 className="text-lg font-semibold text-neutral-900">Unavailable Periods</h3>
@@ -404,13 +412,15 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
                     <div className="text-sm text-neutral-600 mt-1">{slot.reason}</div>
                   )}
                 </div>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => deleteUnavailableSlot(slot.id)}
                   disabled={saving}
-                  className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                  className="text-red-600 hover:bg-red-100"
                 >
                   <Trash2 className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             ))
           )}
@@ -421,43 +431,40 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
           <h4 className="text-sm font-medium text-neutral-700 mb-3">Add Unavailable Period</h4>
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-neutral-600 mb-1">Start Date & Time</label>
-                <input
+              <div className="space-y-1">
+                <Label className="text-xs">Start Date & Time</Label>
+                <Input
                   type="datetime-local"
                   value={newUnavailableSlot.startDateTime}
                   onChange={(e) => setNewUnavailableSlot({ ...newUnavailableSlot, startDateTime: e.target.value })}
-                  className="w-full p-2 border border-neutral-300 rounded-lg"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-neutral-600 mb-1">End Date & Time</label>
-                <input
+              <div className="space-y-1">
+                <Label className="text-xs">End Date & Time</Label>
+                <Input
                   type="datetime-local"
                   value={newUnavailableSlot.endDateTime}
                   onChange={(e) => setNewUnavailableSlot({ ...newUnavailableSlot, endDateTime: e.target.value })}
-                  className="w-full p-2 border border-neutral-300 rounded-lg"
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-xs text-neutral-600 mb-1">Reason (Optional)</label>
-              <input
+            <div className="space-y-1">
+              <Label className="text-xs">Reason (Optional)</Label>
+              <Input
                 type="text"
                 value={newUnavailableSlot.reason}
                 onChange={(e) => setNewUnavailableSlot({ ...newUnavailableSlot, reason: e.target.value })}
                 placeholder="e.g., Vacation, Conference, Personal"
-                className="w-full p-2 border border-neutral-300 rounded-lg"
               />
             </div>
-            <button
+            <Button
+              variant="destructive"
               onClick={addUnavailableSlot}
               disabled={saving || !newUnavailableSlot.startDateTime || !newUnavailableSlot.endDateTime}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
-              <span>Add Unavailable Period</span>
-            </button>
+              Add Unavailable Period
+            </Button>
           </div>
         </div>
       </div>

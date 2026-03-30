@@ -134,7 +134,7 @@ export default function AdminUsersManagement() {
                       <TableRow key={user.id} className="hover:bg-muted/50">
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 font-bold text-sm shrink-0">
+                            <div className="h-9 w-9 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 font-bold text-sm shrink-0">
                               {user.firstName?.[0] || "?"}{user.lastName?.[0] || "?"}
                             </div>
                             <div className="min-w-0">

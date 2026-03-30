@@ -108,7 +108,7 @@ const TraineeApplicationFlowContent: React.FC = () => {
       />
 
       {/* Step Content */}
-      <div className="bg-white rounded-2xl shadow-subtle p-8 mt-8">
+      <div className="bg-white rounded-xl shadow-subtle p-8 mt-8">
         {renderCurrentStep()}
       </div>
       {/* Global error display */}

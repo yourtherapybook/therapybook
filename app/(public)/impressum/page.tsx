@@ -15,7 +15,7 @@ const ImpressumPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white p-8 shadow-subtle space-y-8">
+        <div className="rounded-xl bg-white p-8 shadow-subtle space-y-8">
           <section>
             <h2 className="text-2xl font-bold text-neutral-900 mb-4">Service operator</h2>
             <div className="space-y-3 text-neutral-700">

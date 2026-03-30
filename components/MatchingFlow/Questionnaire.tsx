@@ -64,7 +64,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       </div>
 
       {/* Question */}
-      <div className="bg-white rounded-2xl shadow-subtle p-8 mb-8">
+      <div className="bg-white rounded-xl shadow-subtle p-8 mb-8">
         <h2 className="text-2xl font-bold text-neutral-900 mb-2">
           {currentQuestion.title}
         </h2>

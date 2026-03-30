@@ -1,5 +1,6 @@
 import React from 'react';
 import { Filter, Globe, Users, X } from 'lucide-react';
+import { Checkbox } from '../ui/checkbox';
 import { FilterOptions } from '../../types';
 
 interface FilterSidebarProps {
@@ -75,12 +76,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         <div className="space-y-2">
           {['available', 'offline'].map((availability) => (
             <label key={availability} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={filters.availability.includes(availability)}
-                onChange={() => handleAvailabilityChange(availability)}
-                className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
-              />
+              <Checkbox checked={filters.availability.includes(availability)} onCheckedChange={() => handleAvailabilityChange(availability)} />
               <span className="ml-2 text-sm text-neutral-700 capitalize">{availability}</span>
             </label>
           ))}
@@ -97,12 +93,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         <div className="space-y-2 max-h-48 overflow-y-auto">
           {issueTypes.length > 0 ? issueTypes.map((issueType) => (
             <label key={issueType} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={filters.issueTypes.includes(issueType)}
-                onChange={() => handleIssueTypeChange(issueType)}
-                className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
-              />
+              <Checkbox checked={filters.issueTypes.includes(issueType)} onCheckedChange={() => handleIssueTypeChange(issueType)} />
               <span className="ml-2 text-sm text-neutral-700">{issueType}</span>
             </label>
           )) : (
@@ -121,12 +112,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         <div className="space-y-2 max-h-48 overflow-y-auto">
           {languages.length > 0 ? languages.map((language) => (
             <label key={language} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={filters.languages.includes(language)}
-                onChange={() => handleLanguageChange(language)}
-                className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
-              />
+              <Checkbox checked={filters.languages.includes(language)} onCheckedChange={() => handleLanguageChange(language)} />
               <span className="ml-2 text-sm text-neutral-700">{language}</span>
             </label>
           )) : (

@@ -53,7 +53,7 @@ export default function SessionWorkspace({
     <div className="space-y-8">
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr,1fr] gap-8">
         <div className="space-y-4">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+          <div className="rounded-xl border border-neutral-200 bg-white p-6">
             <div className="mb-4 flex items-center gap-2 text-neutral-900">
               <Video className="h-5 w-5 text-primary-500" />
               <h1 className="text-xl font-semibold">Session Room</h1>
@@ -128,7 +128,7 @@ export default function SessionWorkspace({
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+          <div className="rounded-xl border border-neutral-200 bg-white p-6">
             <div className="mb-2 text-sm text-neutral-500">Session status</div>
             <div className="text-lg font-semibold text-neutral-900">{session.status}</div>
             <div className="mt-4 text-sm text-neutral-600">
@@ -140,7 +140,7 @@ export default function SessionWorkspace({
           </div>
 
           {paymentStatus === 'COMPLETED' && (
-            <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900">
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-green-900">
               <div className="flex items-center gap-2 font-medium">
                 <CheckCircle2 className="h-5 w-5" />
                 Payment confirmed
@@ -151,7 +151,7 @@ export default function SessionWorkspace({
             </div>
           )}
 
-          <div className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm text-neutral-600">
+          <div className="rounded-xl border border-neutral-200 bg-white p-4 text-sm text-neutral-600">
             <div className="flex items-center gap-2 text-neutral-900 font-medium mb-2">
               <Info className="h-4 w-4 text-primary-500" />
               Session controls

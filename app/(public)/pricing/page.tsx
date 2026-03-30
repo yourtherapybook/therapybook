@@ -90,7 +90,7 @@ const Pricing: React.FC = () => {
 
       <section className="pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-[1.1fr,0.9fr] gap-8">
-          <div className="bg-white rounded-3xl shadow-subtle border border-neutral-200 p-8">
+          <div className="bg-white rounded-xl shadow-subtle border border-neutral-200 p-8">
             <div className="flex items-center gap-3 mb-6">
               <Calculator className="h-6 w-6 text-primary-500" />
               <div>
@@ -119,21 +119,21 @@ const Pricing: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-2xl bg-neutral-50 p-4">
+                <div className="rounded-xl bg-neutral-50 p-4">
                   <div className="text-sm text-neutral-500">TherapyBook total</div>
                   <div className="text-2xl font-bold text-neutral-900">€{calculateTotal()}</div>
                 </div>
-                <div className="rounded-2xl bg-neutral-50 p-4">
+                <div className="rounded-xl bg-neutral-50 p-4">
                   <div className="text-sm text-neutral-500">Traditional therapy</div>
                   <div className="text-2xl font-bold text-neutral-900">€{selectedSessions * traditionalTherapyPrice}</div>
                 </div>
-                <div className="rounded-2xl bg-primary-50 p-4 border border-primary-100">
+                <div className="rounded-xl bg-primary-50 p-4 border border-primary-100">
                   <div className="text-sm text-primary-700">Estimated savings</div>
                   <div className="text-2xl font-bold text-primary-700">€{calculateSavings()}</div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
+              <div className="rounded-xl border border-green-200 bg-green-50 p-5">
                 <div className="flex items-center gap-2 text-green-800 font-semibold mb-2">
                   <TrendingDown className="h-5 w-5" />
                   About {calculateSavingsPercentage()}% lower than a traditional €120/session benchmark
@@ -146,7 +146,7 @@ const Pricing: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="bg-white rounded-3xl shadow-subtle border border-neutral-200 p-6">
+            <div className="bg-white rounded-xl shadow-subtle border border-neutral-200 p-6">
               <h2 className="text-xl font-bold text-neutral-900 mb-4">What is included</h2>
               <div className="space-y-3">
                 {[
@@ -163,7 +163,7 @@ const Pricing: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-subtle border border-neutral-200 p-6">
+            <div className="bg-white rounded-xl shadow-subtle border border-neutral-200 p-6">
               <h2 className="text-xl font-bold text-neutral-900 mb-4">Why clients choose this model</h2>
               <div className="space-y-4 text-sm text-neutral-700">
                 <div className="flex items-start gap-3">
@@ -187,17 +187,17 @@ const Pricing: React.FC = () => {
       <section className="pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-subtle">
+            <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-subtle">
               <BookOpen className="h-8 w-8 text-primary-500 mb-4" />
               <h3 className="text-lg font-semibold text-neutral-900 mb-2">Supervised training model</h3>
               <p className="text-neutral-600 text-sm">Trainees work within accredited programs and under supervision, which enables lower-cost sessions while keeping provider listings grounded in reviewed application data.</p>
             </div>
-            <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-subtle">
+            <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-subtle">
               <Clock className="h-8 w-8 text-primary-500 mb-4" />
               <h3 className="text-lg font-semibold text-neutral-900 mb-2">Pay per session</h3>
               <p className="text-neutral-600 text-sm">There is no access subscription. You only pay when you reserve a real slot through checkout.</p>
             </div>
-            <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-subtle">
+            <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-subtle">
               <Award className="h-8 w-8 text-primary-500 mb-4" />
               <h3 className="text-lg font-semibold text-neutral-900 mb-2">Transparent quality bar</h3>
               <p className="text-neutral-600 text-sm">Profiles reflect real application fields from approved trainees instead of hand-authored showcase bios.</p>
@@ -208,28 +208,28 @@ const Pricing: React.FC = () => {
 
       <section className="pb-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-subtle">
+          <div className="bg-white rounded-xl border border-neutral-200 p-8 shadow-subtle">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-neutral-900">What happens after you book</h2>
               <p className="text-neutral-600">Pricing is only one part of trust. The operational workflow below is what the platform now enforces.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5">
                 <Clock className="h-6 w-6 text-primary-500 mb-3" />
                 <h3 className="font-semibold text-neutral-900 mb-2">Reserve real availability</h3>
                 <p className="text-sm text-neutral-600">
                   Checkout starts from published provider availability, and the server validates the slot before a reservation is created.
                 </p>
               </div>
-              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5">
                 <Euro className="h-6 w-6 text-primary-500 mb-3" />
                 <h3 className="font-semibold text-neutral-900 mb-2">Confirm after payment clears</h3>
                 <p className="text-sm text-neutral-600">
                   TherapyBook only confirms the session after the payment processor reports completion, which keeps bookings and payments in sync.
                 </p>
               </div>
-              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5">
                 <Users className="h-6 w-6 text-primary-500 mb-3" />
                 <h3 className="font-semibold text-neutral-900 mb-2">Join from your booked session link</h3>
                 <p className="text-sm text-neutral-600">
@@ -248,7 +248,7 @@ const Pricing: React.FC = () => {
             {faqs.map((faq, index) => {
               const isOpen = openFaq === index;
               return (
-                <div key={faq.question} className="bg-white rounded-2xl border border-neutral-200 shadow-subtle overflow-hidden">
+                <div key={faq.question} className="bg-white rounded-xl border border-neutral-200 shadow-subtle overflow-hidden">
                   <button
                     className="w-full flex items-center justify-between px-6 py-5 text-left"
                     onClick={() => setOpenFaq(isOpen ? null : index)}

@@ -30,7 +30,7 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
         {results.map((result, index) => (
           <div
             key={result.therapist.id}
-            className="bg-white rounded-2xl shadow-subtle hover:shadow-hover transition-all duration-300 overflow-hidden border border-neutral-100"
+            className="bg-white rounded-xl shadow-subtle hover:shadow-hover transition-all duration-300 overflow-hidden border border-neutral-100"
           >
             <div className="p-6">
               {/* Match badge */}
