@@ -113,6 +113,9 @@ export default function ClientDashboard() {
   const [cancelTarget, setCancelTarget] = useState<ClientSession | null>(null);
   const [rateTarget, setRateTarget] = useState<ClientSession | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', phone: '' });
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -471,28 +474,113 @@ export default function ClientDashboard() {
       <section id="profile" className="scroll-mt-24">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Account</CardTitle>
-            <CardDescription>Your account details.</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Account</CardTitle>
+                <CardDescription>Your account details.</CardDescription>
+              </div>
+              {!editingProfile && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingProfile(true);
+                    setProfileForm({
+                      firstName: profile.firstName,
+                      lastName: profile.lastName,
+                      phone: profile.phone || '',
+                    });
+                  }}
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <div>
-                <dt className="text-neutral-500 font-medium">Name</dt>
-                <dd className="text-neutral-900 mt-0.5">
-                  {profile.firstName} {profile.lastName}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-neutral-500 font-medium">Email</dt>
-                <dd className="text-neutral-900 mt-0.5">{profile.email}</dd>
-              </div>
-              {profile.phone && (
-                <div>
-                  <dt className="text-neutral-500 font-medium">Phone</dt>
-                  <dd className="text-neutral-900 mt-0.5">{profile.phone}</dd>
+            {editingProfile ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-neutral-700">First Name</label>
+                    <input
+                      type="text"
+                      value={profileForm.firstName}
+                      onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                      className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-neutral-700">Last Name</label>
+                    <input
+                      type="text"
+                      value={profileForm.lastName}
+                      onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                      className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
                 </div>
-              )}
-            </dl>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-neutral-700">Phone</label>
+                  <input
+                    type="tel"
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    placeholder="Optional"
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={profileSaving}
+                    onClick={async () => {
+                      setProfileSaving(true);
+                      try {
+                        const res = await fetch('/api/users/profile', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(profileForm),
+                        });
+                        if (res.ok) {
+                          setEditingProfile(false);
+                          showSuccess('Profile updated');
+                          void loadData();
+                        }
+                      } catch {
+                        // silent
+                      } finally {
+                        setProfileSaving(false);
+                      }
+                    }}
+                  >
+                    {profileSaving ? 'Saving...' : 'Save'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setEditingProfile(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                <div>
+                  <dt className="text-neutral-500 font-medium">Name</dt>
+                  <dd className="text-neutral-900 mt-0.5">
+                    {profile.firstName} {profile.lastName}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-neutral-500 font-medium">Email</dt>
+                  <dd className="text-neutral-900 mt-0.5">{profile.email}</dd>
+                </div>
+                {profile.phone && (
+                  <div>
+                    <dt className="text-neutral-500 font-medium">Phone</dt>
+                    <dd className="text-neutral-900 mt-0.5">{profile.phone}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
           </CardContent>
         </Card>
       </section>

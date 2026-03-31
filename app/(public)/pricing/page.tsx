@@ -34,11 +34,11 @@ const Pricing: React.FC = () => {
   const faqs = [
     {
       question: "Why are sessions with student therapists more affordable?",
-      answer: "Our trainee therapists are supervised by certified professionals and offer sessions at reduced rates as part of their training. This allows us to provide quality care at €30-€50 per session instead of traditional €120+ rates."
+      answer: "Our trainee therapists work under supervision and offer sessions at reduced rates as part of their training. This allows us to provide quality care at €40 per session instead of traditional €120+ rates."
     },
     {
       question: "Are there any hidden fees or upfront costs?",
-      answer: "No hidden fees whatsoever. You only pay for the therapy sessions you book (€30-€50 each). No upfront access fees, no platform charges, no subscription costs."
+      answer: "No hidden fees whatsoever. You only pay for the therapy sessions you book (€40 each). No upfront access fees, no platform charges, no subscription costs."
     },
     {
       question: "How does supervision work?",
@@ -64,14 +64,14 @@ const Pricing: React.FC = () => {
             <span className="text-primary-500">Supervised Quality</span>
           </h1>
           <p className="text-xl text-neutral-600 max-w-4xl mx-auto mb-8 leading-relaxed">
-            Get professional support from supervised trainees in systemic therapy, Gestalt, coaching & more – starting at €30 per session with no upfront fees
+            Get professional support from supervised trainees in systemic therapy, Gestalt, coaching & more — €40 per session with no upfront fees
           </p>
 
           {/* Key Benefits */}
           <div className="flex flex-wrap justify-center gap-6 mb-12">
             <div className="flex items-center space-x-2 bg-white px-6 py-3 rounded-full shadow-subtle">
               <Euro className="h-5 w-5 text-primary-500" />
-              <span className="font-medium text-neutral-700">€30-€50 per session</span>
+              <span className="font-medium text-neutral-700">€40 per session</span>
             </div>
             <div className="flex items-center space-x-2 bg-white px-6 py-3 rounded-full shadow-subtle">
               <Heart className="h-5 w-5 text-primary-500" />
@@ -79,7 +79,7 @@ const Pricing: React.FC = () => {
             </div>
             <div className="flex items-center space-x-2 bg-white px-6 py-3 rounded-full shadow-subtle">
               <Shield className="h-5 w-5 text-primary-500" />
-              <span className="font-medium text-neutral-700">Supervised by certified therapists</span>
+              <span className="font-medium text-neutral-700">Supervised trainee therapists</span>
             </div>
           </div>
 
@@ -152,7 +152,7 @@ const Pricing: React.FC = () => {
               <div className="space-y-3">
                 {[
                   '50-minute video sessions with approved trainee therapists',
-                  'Clinical supervision by certified professionals',
+                  'Trainees work under assigned supervision',
                   'Flexible session-by-session pricing',
                   'Secure booking and reminder emails',
                 ].map((item) => (
