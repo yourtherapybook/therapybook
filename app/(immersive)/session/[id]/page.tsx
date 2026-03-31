@@ -105,8 +105,19 @@ export default async function SessionRoomPage({
       <div className="mx-auto max-w-7xl">
         <SessionWorkspace
           initialSession={{
-            ...therapySession,
+            id: therapySession.id,
+            clientId: therapySession.clientId,
+            therapistId: therapySession.therapistId,
+            status: therapySession.status,
             scheduledAt: therapySession.scheduledAt.toISOString(),
+            duration: therapySession.duration,
+            price: Number(therapySession.price),
+            currency: therapySession.currency,
+            notes: therapySession.notes,
+            rating: therapySession.rating,
+            feedback: therapySession.feedback,
+            client: therapySession.client,
+            therapist: therapySession.therapist,
           }}
           userRole={userRole}
           roomUrl={roomUrl}
