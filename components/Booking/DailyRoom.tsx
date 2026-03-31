@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Loader2, Video, VideoOff, Mic, MicOff, PhoneOff,
-  Monitor, MessageSquare, AlertCircle,
+  Monitor, AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import DailyIframe, { DailyCall, DailyParticipant } from '@daily-co/daily-js';
 
 interface DailyRoomProps {
   roomUrl: string;
@@ -21,88 +20,21 @@ export default function DailyRoom({
   token,
   onLeave,
 }: DailyRoomProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const callRef = useRef<DailyCall | null>(null);
-
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [state, setState] = useState<'loading' | 'joined' | 'error' | 'left'>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [audioMuted, setAudioMuted] = useState(false);
-  const [videoMuted, setVideoMuted] = useState(false);
-  const [screenSharing, setScreenSharing] = useState(false);
-
-  const cleanup = useCallback(() => {
-    if (callRef.current) {
-      callRef.current.destroy().catch(() => {});
-      callRef.current = null;
-    }
-  }, []);
 
   useEffect(() => {
-    if (!containerRef.current || callRef.current) return;
-
-    const container = containerRef.current;
-
-    const initCall = async () => {
-      try {
-        // Clear any existing iframes from previous mount (React Strict Mode)
-        container.querySelectorAll('iframe').forEach((el) => el.remove());
-
-        const call = DailyIframe.createFrame(container, {
-          iframeStyle: {
-            width: '100%',
-            height: '560px',
-            border: 'none',
-            borderRadius: '12px',
-          },
-          showLeaveButton: false,
-          showFullscreenButton: true,
-        });
-
-        callRef.current = call;
-
-        call.on('joined-meeting', () => setState('joined'));
-        call.on('left-meeting', () => {
-          setState('left');
-          onLeave?.();
-        });
-        call.on('error', (evt) => {
-          setError(evt?.errorMsg || 'Connection error');
-          setState('error');
-        });
-        call.on('participant-updated', (evt) => {
-          if (evt?.participant?.local) {
-            setAudioMuted(!evt.participant.audio);
-            setVideoMuted(!evt.participant.video);
-            setScreenSharing(!!evt.participant.screen);
-          }
-        });
-
-        await call.join({
-          url: roomUrl,
-          userName: displayName,
-          ...(token ? { token } : {}),
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to join session');
-        setState('error');
-      }
-    };
-
-    void initCall();
-
-    return cleanup;
-  }, [roomUrl, displayName, token, onLeave, cleanup]);
-
-  const toggleAudio = () => callRef.current?.setLocalAudio(!callRef.current.localAudio());
-  const toggleVideo = () => callRef.current?.setLocalVideo(!callRef.current.localVideo());
-  const toggleScreen = async () => {
-    if (screenSharing) {
-      await callRef.current?.stopScreenShare();
-    } else {
-      await callRef.current?.startScreenShare();
+    // Simple iframe approach — no SDK instance conflicts
+    if (iframeRef.current) {
+      const url = new URL(roomUrl);
+      // Add display name and config via URL params
+      url.searchParams.set('t', token || '');
+      url.searchParams.set('userName', displayName);
+      iframeRef.current.src = url.toString();
+      setState('joined');
     }
-  };
-  const hangup = () => callRef.current?.leave();
+  }, [roomUrl, displayName, token]);
 
   if (state === 'error') {
     return (
@@ -127,7 +59,6 @@ export default function DailyRoom({
 
   return (
     <div className="space-y-3">
-      {/* Video container */}
       <div className="rounded-xl border border-neutral-200 overflow-hidden bg-neutral-900 relative">
         {state === 'loading' && (
           <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 z-10">
@@ -138,50 +69,14 @@ export default function DailyRoom({
             </div>
           </div>
         )}
-        <div ref={containerRef} className="w-full" style={{ minHeight: 560 }} />
+        <iframe
+          ref={iframeRef}
+          title="TherapyBook session room"
+          className="w-full"
+          style={{ height: 560 }}
+          allow="camera; microphone; fullscreen; display-capture; autoplay"
+        />
       </div>
-
-      {/* Control bar */}
-      {state === 'joined' && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant={audioMuted ? "destructive" : "outline"}
-            size="icon"
-            onClick={toggleAudio}
-            className="rounded-full"
-            title={audioMuted ? 'Unmute' : 'Mute'}
-          >
-            {audioMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-          </Button>
-          <Button
-            variant={videoMuted ? "destructive" : "outline"}
-            size="icon"
-            onClick={toggleVideo}
-            className="rounded-full"
-            title={videoMuted ? 'Camera on' : 'Camera off'}
-          >
-            {videoMuted ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
-          </Button>
-          <Button
-            variant={screenSharing ? "secondary" : "outline"}
-            size="icon"
-            onClick={() => void toggleScreen()}
-            className="rounded-full"
-            title="Share screen"
-          >
-            <Monitor className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="icon"
-            onClick={hangup}
-            className="rounded-full"
-            title="Leave session"
-          >
-            <PhoneOff className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
