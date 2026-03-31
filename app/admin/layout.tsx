@@ -18,6 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: '/admin/sessions', label: 'Sessions', icon: 'FileText' },
         { href: '/admin/payments', label: 'Payments', icon: 'CreditCard' },
         { href: '/admin/documents', label: 'Documents', icon: 'FolderOpen' },
+        { href: '/admin/emails', label: 'Email Templates', icon: 'Mail' },
         { href: '/admin/audit', label: 'Audit Log', icon: 'ScrollText' },
     ];
 

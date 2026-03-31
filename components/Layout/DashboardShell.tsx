@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
     Heart, LogOut, X, MoreHorizontal, ExternalLink,
     Home, Calendar, Clock, User, Users,
-    Activity, CheckSquare, FileText, CreditCard, FolderOpen, ScrollText,
+    Activity, CheckSquare, FileText, CreditCard, FolderOpen, ScrollText, Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SignOutButton from '@/components/Auth/SignOutButton';
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 const ICON_MAP: Record<string, React.ElementType> = {
     Home, Calendar, Clock, User, Users,
-    Activity, CheckSquare, FileText, CreditCard, FolderOpen, ScrollText,
+    Activity, CheckSquare, FileText, CreditCard, FolderOpen, ScrollText, Mail,
 };
 
 interface NavItem {

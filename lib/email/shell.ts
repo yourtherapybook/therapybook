@@ -7,7 +7,7 @@
 
 const APP_NAME = 'TherapyBook';
 const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-const SUPPORT_EMAIL = 'support@therapybook.com';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'yourtherapybook@gmail.com';
 
 // Colors
 const C = {

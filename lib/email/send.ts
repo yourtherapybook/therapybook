@@ -12,7 +12,7 @@
 import { Resend } from 'resend';
 import { EMAIL_TEMPLATES, type EmailTemplateKey } from './templates';
 
-const FROM_EMAIL = 'TherapyBook <noreply@therapybook.com>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'TherapyBook <noreply@therapybook.online>';
 
 let resendClient: Resend | null = null;
 
