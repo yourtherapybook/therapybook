@@ -47,21 +47,24 @@ export default function AdminApplicationsQueue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("SUBMITTED");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/applications?status=${filter}`);
+      const res = await fetch(`/api/admin/applications?status=${filter}&page=${page}&limit=30`);
       if (!res.ok) throw new Error("Failed to load applications");
       const data = await res.json();
       setApplications(data.applications || []);
+      setTotalPages(data.pagination?.totalPages || 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, page]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -79,7 +82,7 @@ export default function AdminApplicationsQueue() {
             key={f}
             variant={filter === f ? "default" : "outline"}
             size="sm"
-            onClick={() => setFilter(f)}
+            onClick={() => { setFilter(f); setPage(1); }}
           >
             {f === "ALL" ? "All" : statusConfig[f]?.label || f}
           </Button>
@@ -168,6 +171,14 @@ export default function AdminApplicationsQueue() {
           )}
         </CardContent>
       </Card>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</Button>
+          <span className="text-sm text-neutral-500">Page {page} of {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
+        </div>
+      )}
     </div>
   );
 }

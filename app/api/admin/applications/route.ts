@@ -7,34 +7,47 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-        return NextResponse.json({ error: 'Cryptographic boundary violation' }, { status: 403 });
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '30')));
+    const skip = (page - 1) * limit;
+
+    const where = status && status !== 'ALL' ? { status: status as any } : {};
 
     try {
-        const applications = await prisma.traineeApplication.findMany({
-            where: status && status !== 'ALL' ? { status: status as any } : undefined,
-            include: {
-                user: {
-                    select: {
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        documents: {
-                            select: { id: true, type: true, status: true },
-                            orderBy: { createdAt: 'desc' },
+        const [applications, total] = await Promise.all([
+            prisma.traineeApplication.findMany({
+                where,
+                include: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            documents: {
+                                select: { id: true, type: true, status: true },
+                                orderBy: { createdAt: 'desc' },
+                            },
                         },
                     },
                 },
-            },
-            orderBy: { updatedAt: 'desc' },
-        });
+                orderBy: { updatedAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            prisma.traineeApplication.count({ where }),
+        ]);
 
-        return NextResponse.json({ applications });
+        return NextResponse.json({
+            applications,
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
     } catch (error) {
-        console.error('Admin Queue Fetch Error:', error);
-        return NextResponse.json({ error: 'Internal pipeline collapse' }, { status: 500 });
+        console.error('Admin applications error:', error);
+        return NextResponse.json({ error: 'Failed to load applications' }, { status: 500 });
     }
 }

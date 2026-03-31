@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import SessionScheduler from '@/components/Booking/SessionScheduler';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useAuth } from '@/hooks/useAuth';
 import { Therapist } from '@/types';
 import { analytics } from '@/lib/analytics';
@@ -324,22 +324,22 @@ function BookingContent() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-neutral-700">Provider</label>
-                <Select value={selectedTherapistId} onValueChange={(value) => {
-                  setSelectedTherapistId(value);
-                  setSelectedSlot(undefined);
-                  setSelectedDate(undefined);
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map((provider) => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        {provider.name} {provider.availability === 'offline' ? '(availability coming soon)' : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={selectedTherapistId}
+                  onValueChange={(value) => {
+                    setSelectedTherapistId(value);
+                    setSelectedSlot(undefined);
+                    setSelectedDate(undefined);
+                  }}
+                  placeholder="Search for a therapist..."
+                  searchPlaceholder="Type to search therapists..."
+                  emptyText="No matching therapists found."
+                  options={providers.map((provider) => ({
+                    value: provider.id,
+                    label: provider.name,
+                    description: provider.availability === 'offline' ? 'Availability coming soon' : provider.specializations?.slice(0, 2).join(', ') || 'Available',
+                  }))}
+                />
               </div>
 
               {selectedTherapist ? (

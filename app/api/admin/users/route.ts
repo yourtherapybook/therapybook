@@ -15,27 +15,40 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-        return NextResponse.json({ error: 'Cryptographic boundary violation' }, { status: 403 });
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    try {
-        const users = await prisma.user.findMany({
-            select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                role: true,
-                emailVerified: true,
-                createdAt: true
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '30')));
+    const skip = (page - 1) * limit;
 
-        return NextResponse.json({ users });
+    try {
+        const [users, total] = await Promise.all([
+            prisma.user.findMany({
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    role: true,
+                    emailVerified: true,
+                    createdAt: true,
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            prisma.user.count(),
+        ]);
+
+        return NextResponse.json({
+            users,
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
     } catch (error) {
-        console.error('Admin Queue Fetch Error:', error);
-        return NextResponse.json({ error: 'Internal pipeline collapse' }, { status: 500 });
+        console.error('Admin users error:', error);
+        return NextResponse.json({ error: 'Failed to load users' }, { status: 500 });
     }
 }
 

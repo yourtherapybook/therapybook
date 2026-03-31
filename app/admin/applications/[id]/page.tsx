@@ -23,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Card,
   CardContent,
@@ -691,7 +691,7 @@ export default function ApplicationReview() {
               <CardContent>
                 {supervisors.length > 0 ? (
                   <div className="space-y-3">
-                    <Select
+                    <Combobox
                       value={assignedSupervisorId || ""}
                       onValueChange={(value) => {
                         if (value && value !== assignedSupervisorId) {
@@ -699,18 +699,15 @@ export default function ApplicationReview() {
                         }
                       }}
                       disabled={supervisorProcessing}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a supervisor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {supervisors.map((sup) => (
-                          <SelectItem key={sup.id} value={sup.id}>
-                            {sup.firstName} {sup.lastName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Search supervisors..."
+                      searchPlaceholder="Type to search..."
+                      emptyText="No supervisors found."
+                      options={supervisors.map((sup) => ({
+                        value: sup.id,
+                        label: `${sup.firstName} ${sup.lastName}`,
+                        description: sup.email,
+                      }))}
+                    />
                     {assignedSupervisorId && (
                       <p className="text-xs text-green-600">Supervisor assigned</p>
                     )}
