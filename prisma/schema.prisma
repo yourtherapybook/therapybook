@@ -18,6 +18,7 @@ model User {
   phone     String?
   password  String? // Made optional for OAuth users
   role      UserRole @default(CLIENT)
+  timezone  String?  @default("Europe/Berlin") // IANA timezone for scheduling
 
   // NextAuth.js fields
   name          String?
@@ -203,6 +204,8 @@ model Session {
   therapist User     @relation("TherapistSessions", fields: [therapistId], references: [id])
   payment   Payment?
 
+  // Prevent double-booking: one therapist can only have one active session at a given time
+  @@unique([therapistId, scheduledAt], name: "unique_therapist_slot")
   @@map("sessions")
 }
 

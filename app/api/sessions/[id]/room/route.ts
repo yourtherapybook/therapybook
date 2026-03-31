@@ -43,11 +43,33 @@ export async function POST(
         scheduledAt: true,
         duration: true,
         status: true,
+        payment: { select: { status: true } },
       },
     });
 
     if (!therapySession) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    // Server-side gate: payment must be completed
+    if (!isAdmin && therapySession.payment?.status !== 'COMPLETED') {
+      return NextResponse.json(
+        { error: 'Room access requires completed payment' },
+        { status: 403 }
+      );
+    }
+
+    // Server-side gate: time window (15 min before to session end + 30 min)
+    const now = new Date();
+    const sessionStart = new Date(therapySession.scheduledAt);
+    const roomOpensAt = new Date(sessionStart.getTime() - 15 * 60 * 1000);
+    const roomClosesAt = new Date(sessionStart.getTime() + (therapySession.duration + 30) * 60 * 1000);
+
+    if (!isAdmin && (now < roomOpensAt || now > roomClosesAt)) {
+      return NextResponse.json(
+        { error: 'Room is only accessible during the session window' },
+        { status: 403 }
+      );
     }
 
     // If room URL already exists and is a Daily URL, return it

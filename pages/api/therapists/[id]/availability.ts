@@ -42,12 +42,23 @@ export default async function handler(
         ],
       });
 
+      // Check if requester is the owner or admin — only they see reasons
+      const user = await authenticateUser(req, res).catch(() => null);
+      const isOwnerOrAdmin = user && (user.id === therapistId || user.role === 'ADMIN');
+
       const unavailableSlots = await prisma.unavailableSlot.findMany({
         where: {
           therapistId,
           endDateTime: {
-            gte: new Date(), // Only future unavailable slots
+            gte: new Date(),
           },
+        },
+        select: {
+          id: true,
+          startDateTime: true,
+          endDateTime: true,
+          reason: isOwnerOrAdmin ? true : false, // Hide reasons from public
+          createdAt: true,
         },
         orderBy: {
           startDateTime: 'asc',

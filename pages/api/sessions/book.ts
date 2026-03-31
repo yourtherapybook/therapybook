@@ -129,9 +129,14 @@ export default async function handler(
       payment: result.payment,
       message: 'Session reserved pending payment'
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Validation error', details: error.issues });
+    }
+
+    // Handle unique constraint violation (double-booking)
+    if (error?.code === 'P2002' && error?.meta?.target?.includes('unique_therapist_slot')) {
+      return res.status(409).json({ error: 'This time slot was just booked by someone else. Please select a different time.' });
     }
 
     console.error('Session booking error:', error);
