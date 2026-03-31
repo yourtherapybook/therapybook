@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { AuthService } from '@/lib/services/AuthService';
 import { StorageService } from '@/lib/services/StorageService';
 import { errorResponse, successResponse } from '@/lib/services/ApiResponse';
+import { prisma } from '@/lib/prisma';
 
 const commitSchema = z.object({
   r2Key: z.string().min(1),
@@ -50,6 +51,14 @@ export async function POST(req: Request) {
       size: result.data.size,
       mimeType: result.data.mimeType,
     });
+
+    // Sync User.image when a profile photo is uploaded so avatars stay in sync
+    // across the directory (profilePhotoUrl) and the rest of the app (User.image)
+    if (result.data.fileType === 'PROFILE_PHOTO') {
+      const publicUrl = `${process.env.NEXT_PUBLIC_R2_DEV_URL}/${result.data.r2Key}`;
+      await prisma.user.update({ where: { id: userId }, data: { image: publicUrl } })
+        .catch((err) => console.error('[commit] Failed to sync User.image:', err));
+    }
 
     return NextResponse.json(successResponse({ document }));
   } catch (error: any) {
