@@ -3,7 +3,7 @@ export async function uploadToR2(file: File, fileType: "PROFILE_PHOTO" | "CERTIF
     const res = await fetch('/api/upload/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileType, mimeType: file.type })
+        body: JSON.stringify({ fileType, mimeType: file.type, size: file.size })
     });
 
     const data = await res.json();

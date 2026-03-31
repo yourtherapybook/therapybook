@@ -41,7 +41,20 @@ export default function AdminDocuments() {
   const [totalPages, setTotalPages] = useState(1);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const documentBaseUrl = process.env.NEXT_PUBLIC_R2_DEV_URL || "";
+  const handleDownload = async (docId: string, title: string) => {
+    try {
+      const res = await fetch(`/api/admin/documents/${docId}`);
+      if (!res.ok) throw new Error("Failed to get download link");
+      const data = await res.json();
+      const a = document.createElement("a");
+      a.href = data.url;
+      a.download = title;
+      a.target = "_blank";
+      a.click();
+    } catch {
+      setError("Could not generate download link");
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -183,13 +196,9 @@ export default function AdminDocuments() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {documentBaseUrl && (
-                              <Button variant="ghost" size="sm" asChild>
-                                <a href={`${documentBaseUrl}/${doc.r2Key}`} target="_blank" rel="noreferrer">
-                                  <Download className="h-4 w-4" />
-                                </a>
-                              </Button>
-                            )}
+                            <Button variant="ghost" size="sm" onClick={() => handleDownload(doc.id, doc.title)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
                             {doc.status === "PENDING" && (
                               <>
                                 <Button
