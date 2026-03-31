@@ -20,7 +20,7 @@ const clientNav = [
 const supervisorNav = [
     { href: '/supervisor-dashboard', label: 'Overview', icon: 'Home' },
     { href: '/supervisor-dashboard#trainees', label: 'Trainees', icon: 'Users' },
-    { href: '/supervisor-dashboard#sessions', label: 'Sessions', icon: 'Calendar' },
+    { href: '/supervisor-dashboard#sessions', label: 'Sessions', icon: 'FileText' },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
