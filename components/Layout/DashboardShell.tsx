@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-    Heart, LogOut, X, MoreHorizontal,
+    Heart, LogOut, X, MoreHorizontal, ExternalLink,
     Home, Calendar, Clock, User, Users,
     Activity, CheckSquare, FileText, CreditCard, FolderOpen, ScrollText,
 } from 'lucide-react';
@@ -96,8 +96,15 @@ export default function DashboardShell({
                     })}
                 </nav>
 
-                <div className={cn("p-4 border-t text-sm shrink-0", sidebarBorder, footerText)}>
-                    <div className={cn("truncate px-3 mb-3 font-medium", footerEmail)}>{userEmail}</div>
+                <div className={cn("p-4 border-t text-sm shrink-0 space-y-1", sidebarBorder, footerText)}>
+                    <div className={cn("truncate px-3 mb-2 font-medium", footerEmail)}>{userEmail}</div>
+                    <Link
+                        href="/"
+                        className={cn("flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors", sidebarText, sidebarTextHover)}
+                    >
+                        <ExternalLink className={cn("h-4 w-4 mr-3", sidebarIconColor)} />
+                        Back to site
+                    </Link>
                     <SignOutButton className={cn("flex w-full items-center justify-start px-3 py-2 font-medium rounded-lg transition-colors", logoutColor)}>
                         <LogOut className="h-4 w-4 mr-3" />
                         Sign Out
@@ -222,8 +229,16 @@ export default function DashboardShell({
                             })}
                         </div>
 
-                        {/* Sign out */}
-                        <div className="px-3 py-3 border-t border-neutral-100">
+                        {/* Back to site + Sign out */}
+                        <div className="px-3 py-3 border-t border-neutral-100 space-y-1">
+                            <Link
+                                href="/"
+                                onClick={() => setMoreDrawerOpen(false)}
+                                className="flex w-full items-center px-3 py-2.5 text-sm font-medium rounded-lg text-neutral-600 hover:bg-neutral-50 transition-colors"
+                            >
+                                <ExternalLink className="h-5 w-5 mr-3 text-neutral-400" />
+                                Back to TherapyBook
+                            </Link>
                             <SignOutButton className="flex w-full items-center justify-start px-3 py-2.5 text-sm font-medium rounded-lg text-red-600 hover:bg-red-50 transition-colors">
                                 <LogOut className="h-5 w-5 mr-3" />
                                 Sign Out
