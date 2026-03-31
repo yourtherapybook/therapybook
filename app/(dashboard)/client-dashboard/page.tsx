@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CancelSessionDialog from "@/components/Dashboard/CancelSessionDialog";
 import RateSessionDialog from "@/components/Dashboard/RateSessionDialog";
+import { SessionTypeBadge, SessionLocationInfo } from "@/components/Common/SessionTypeBadge";
 
 interface ClientSession {
   id: string;
@@ -22,6 +23,8 @@ interface ClientSession {
   rating: number | null;
   feedback: string | null;
   cancellationReason: string | null;
+  type: string;
+  location: string | null;
   price: string;
   currency: string;
   therapist: {
@@ -264,15 +267,17 @@ export default function ClientDashboard() {
                             </span>
                             <span className="text-xs text-neutral-400">{joinText}</span>
                           </div>
+                          <SessionLocationInfo type={session.type} location={session.location} />
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
+                          <SessionTypeBadge type={session.type} location={session.location} />
                           {paymentOk ? (
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Paid</Badge>
                           ) : (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Payment pending</Badge>
                           )}
                           <Badge variant="outline" className={st.className}>{st.label}</Badge>
-                          {joinable && (
+                          {session.type === 'ONLINE' && joinable && (
                             <Button asChild size="sm">
                               <Link href={`/session/${session.id}`}>
                                 <Video className="h-4 w-4" /> Join
@@ -355,6 +360,7 @@ export default function ClientDashboard() {
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
+                          <SessionTypeBadge type={session.type} />
                           <Badge variant="outline" className={st.className}>{st.label}</Badge>
                           {pst && (
                             <Badge variant="outline" className={pst.className}>{pst.label}</Badge>

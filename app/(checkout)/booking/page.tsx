@@ -2,7 +2,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertCircle, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, ShieldCheck, Video, MapPin } from 'lucide-react';
 import SessionScheduler from '@/components/Booking/SessionScheduler';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +39,7 @@ function BookingContent() {
   const [selectedTherapistId, setSelectedTherapistId] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | undefined>();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [sessionType, setSessionType] = useState<'ONLINE' | 'IN_PERSON'>('ONLINE');
   const [emailVerified, setEmailVerified] = useState(false);
   const [isLoadingPage, setIsLoadingPage] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -176,6 +177,7 @@ function BookingContent() {
           therapistId: selectedTherapist.id,
           scheduledAt: selectedSlot.datetime,
           duration: 50,
+          sessionType,
         }),
       });
 
@@ -342,6 +344,43 @@ function BookingContent() {
                 />
               </div>
 
+              {/* Session type selector */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-neutral-700">Session Type</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSessionType('ONLINE')}
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                      sessionType === 'ONLINE'
+                        ? 'border-primary-500 bg-primary-50'
+                        : 'border-neutral-200 hover:border-neutral-300'
+                    }`}
+                  >
+                    <Video className={`h-5 w-5 ${sessionType === 'ONLINE' ? 'text-primary-600' : 'text-neutral-400'}`} />
+                    <div>
+                      <div className={`text-sm font-medium ${sessionType === 'ONLINE' ? 'text-primary-700' : 'text-neutral-900'}`}>Online</div>
+                      <div className="text-xs text-neutral-500">Video session</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSessionType('IN_PERSON')}
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                      sessionType === 'IN_PERSON'
+                        ? 'border-primary-500 bg-primary-50'
+                        : 'border-neutral-200 hover:border-neutral-300'
+                    }`}
+                  >
+                    <MapPin className={`h-5 w-5 ${sessionType === 'IN_PERSON' ? 'text-primary-600' : 'text-neutral-400'}`} />
+                    <div>
+                      <div className={`text-sm font-medium ${sessionType === 'IN_PERSON' ? 'text-primary-700' : 'text-neutral-900'}`}>In Person</div>
+                      <div className="text-xs text-neutral-500">At practice location</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               {selectedTherapist ? (
                 <SessionScheduler
                   therapistId={selectedTherapist.id}
@@ -396,6 +435,13 @@ function BookingContent() {
                 <div className="flex justify-between">
                   <span className="text-neutral-500">Duration</span>
                   <span className="font-medium text-neutral-900">50 minutes</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Type</span>
+                  <span className="font-medium text-neutral-900 flex items-center gap-1.5">
+                    {sessionType === 'ONLINE' ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
+                    {sessionType === 'ONLINE' ? 'Online Video' : 'In Person'}
+                  </span>
                 </div>
                 <div className="flex justify-between border-t border-neutral-100 pt-3">
                   <span className="font-medium text-neutral-900">Total</span>

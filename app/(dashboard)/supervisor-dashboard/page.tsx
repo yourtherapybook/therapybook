@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import { SessionTypeBadge } from "@/components/Common/SessionTypeBadge";
 
 interface AssignedTrainee {
   id: string;
@@ -31,6 +32,7 @@ interface SupervisorSession {
   scheduledAt: string;
   duration: number;
   status: string;
+  type: string;
   notes: string | null;
   therapist: { id: string; firstName: string; lastName: string };
   client: { firstName: string; lastName: string };
@@ -347,6 +349,7 @@ export default function SupervisorDashboard() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
+                        <SessionTypeBadge type={session.type} />
                         <Badge variant="outline" className={st.className}>{st.label}</Badge>
                         {isPast && (
                           hasNotes ? (

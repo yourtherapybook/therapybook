@@ -181,9 +181,11 @@ model Session {
   status      SessionStatus @default(SCHEDULED)
 
   // Session details
+  type        SessionType @default(ONLINE)
   scheduledAt DateTime
   duration           Int      @default(50) // minutes
-  meetingUrl         String?
+  meetingUrl         String?  // Video room URL (for ONLINE sessions)
+  location           String?  // Physical address (for IN_PERSON sessions)
   notes              String?
   cancellationReason String?
   rating             Int?
@@ -381,6 +383,11 @@ enum ApplicationStatus {
   UNDER_REVIEW
   APPROVED
   REJECTED
+}
+
+enum SessionType {
+  ONLINE
+  IN_PERSON
 }
 
 enum SessionStatus {

@@ -9,6 +9,7 @@ const bookingSchema = z.object({
   therapistId: z.string().cuid('Invalid therapist ID'),
   scheduledAt: z.string().datetime('Invalid date format'),
   duration: z.number().min(30).max(120).default(50),
+  sessionType: z.enum(['ONLINE', 'IN_PERSON']).default('ONLINE'),
 });
 
 export default async function handler(
@@ -72,15 +73,34 @@ export default async function handler(
     const sessionCurrency = await getSessionCurrency();
 
     const result = await prisma.$transaction(async (tx) => {
+      // For in-person sessions, get therapist's practice location
+      let sessionLocation: string | null = null;
+      if (validatedData.sessionType === 'IN_PERSON') {
+        const application = await tx.traineeApplication.findFirst({
+          where: { userId: validatedData.therapistId },
+          select: { practiceName: true, street: true, city: true, stateProvince: true, zipPostalCode: true, country: true },
+        });
+        if (application) {
+          sessionLocation = [
+            application.practiceName,
+            application.street,
+            [application.city, application.stateProvince, application.zipPostalCode].filter(Boolean).join(' '),
+            application.country,
+          ].filter(Boolean).join(', ');
+        }
+      }
+
       const createdSession = await tx.session.create({
         data: {
           clientId: user.id,
           therapistId: validatedData.therapistId,
+          type: validatedData.sessionType,
           scheduledAt,
           duration: validatedData.duration,
           price: sessionPrice,
           currency: sessionCurrency,
           status: 'SCHEDULED',
+          location: sessionLocation,
         },
       });
 

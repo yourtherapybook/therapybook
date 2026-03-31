@@ -16,12 +16,15 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { SessionTypeBadge, SessionLocationInfo } from "@/components/Common/SessionTypeBadge";
 
 interface DashboardSession {
   id: string;
   scheduledAt: string;
   duration: number;
   status: string;
+  type: string;
+  location: string | null;
   notes: string | null;
   client: { firstName: string; lastName: string };
   payment?: { status: string; amount: string; currency: string } | null;
@@ -369,13 +372,14 @@ export default function TraineeDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
+                          <SessionTypeBadge type={session.type} />
                           {paymentOk ? (
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Paid</Badge>
                           ) : (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Payment pending</Badge>
                           )}
                           <Badge variant="outline" className={st.className}>{st.label}</Badge>
-                          {joinable && (
+                          {session.type === 'ONLINE' && joinable && (
                             <Button size="sm" asChild>
                               <Link href={`/session/${session.id}`}>
                                 <Video className="h-4 w-4" /> Join
@@ -438,6 +442,7 @@ export default function TraineeDashboard() {
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
+                          <SessionTypeBadge type={session.type} />
                           <Badge variant="outline" className={st.className}>{st.label}</Badge>
                           {canCloseout && (
                             <>

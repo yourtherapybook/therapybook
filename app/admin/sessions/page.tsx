@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { SessionTypeBadge } from "@/components/Common/SessionTypeBadge";
 
 interface AdminSession {
   id: string;
   scheduledAt: string;
   duration: number;
+  type: string;
   status: string;
   notes: string | null;
   cancellationReason: string | null;
@@ -191,6 +193,7 @@ export default function AdminSessionsManagement() {
                           </div>
                         </TableCell>
                         <TableCell>
+                          <SessionTypeBadge type={session.type} />
                           <Badge variant="outline" className={sst.className}>{sst.label}</Badge>
                         </TableCell>
                         <TableCell>
