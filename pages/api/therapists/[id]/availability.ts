@@ -13,10 +13,15 @@ const availabilitySchema = z.object({
 });
 
 const unavailableSlotSchema = z.object({
-  startDateTime: z.string().datetime(),
-  endDateTime: z.string().datetime(),
+  startDateTime: z.string().min(1),
+  endDateTime: z.string().min(1),
   reason: z.string().optional(),
-});
+}).transform((data) => ({
+  ...data,
+  // Normalize datetime-local format to full ISO (append :00.000Z if needed)
+  startDateTime: data.startDateTime.includes('Z') ? data.startDateTime : `${data.startDateTime}:00.000Z`,
+  endDateTime: data.endDateTime.includes('Z') ? data.endDateTime : `${data.endDateTime}:00.000Z`,
+}));
 
 export default async function handler(
   req: NextApiRequest,

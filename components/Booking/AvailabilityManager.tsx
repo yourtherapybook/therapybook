@@ -96,7 +96,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'Failed to add availability' }));
         throw new Error(errorData.error || 'Failed to add availability');
       }
 
@@ -139,7 +139,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'Failed to add unavailable slot' }));
         throw new Error(errorData.error || 'Failed to add unavailable slot');
       }
 
@@ -173,7 +173,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: "Operation failed" }));
         throw new Error(errorData.error || 'Failed to delete availability');
       }
 
@@ -201,7 +201,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: "Operation failed" }));
         throw new Error(errorData.error || 'Failed to delete unavailable slot');
       }
 
@@ -236,7 +236,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
         body: JSON.stringify({ availabilityId: editingId, ...newAvailability }),
       });
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: "Operation failed" }));
         throw new Error(errorData.error || 'Failed to update');
       }
       const data = await response.json();
@@ -436,6 +436,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
                 <Input
                   type="datetime-local"
                   value={newUnavailableSlot.startDateTime}
+                  min={new Date().toISOString().slice(0, 16)}
                   onChange={(e) => setNewUnavailableSlot({ ...newUnavailableSlot, startDateTime: e.target.value })}
                 />
               </div>
@@ -444,6 +445,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ therapistId }
                 <Input
                   type="datetime-local"
                   value={newUnavailableSlot.endDateTime}
+                  min={newUnavailableSlot.startDateTime || new Date().toISOString().slice(0, 16)}
                   onChange={(e) => setNewUnavailableSlot({ ...newUnavailableSlot, endDateTime: e.target.value })}
                 />
               </div>
