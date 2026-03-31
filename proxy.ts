@@ -10,11 +10,15 @@ export default withAuth(
             return NextResponse.redirect(new URL('/unauthorized', req.url))
         }
 
-        if (path.startsWith('/supervisor') && !['SUPERVISOR', 'ADMIN'].includes(role)) {
+        if ((path.startsWith('/supervisor') || path.startsWith('/supervisor-dashboard')) && !['SUPERVISOR', 'ADMIN'].includes(role)) {
             return NextResponse.redirect(new URL('/unauthorized', req.url))
         }
 
         if (path.startsWith('/trainee-dashboard') && !['TRAINEE', 'SUPERVISOR', 'ADMIN'].includes(role)) {
+            return NextResponse.redirect(new URL('/unauthorized', req.url))
+        }
+
+        if (path.startsWith('/client-dashboard') && !['CLIENT', 'ADMIN'].includes(role)) {
             return NextResponse.redirect(new URL('/unauthorized', req.url))
         }
     },
@@ -29,6 +33,8 @@ export const config = {
     matcher: [
         '/admin/:path*',
         '/supervisor/:path*',
+        '/supervisor-dashboard/:path*',
+        '/client-dashboard/:path*',
         '/trainee-dashboard/:path*',
         '/api/admin/:path*',
         '/api/supervisor/:path*'

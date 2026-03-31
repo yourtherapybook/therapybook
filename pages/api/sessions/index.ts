@@ -17,13 +17,40 @@ export default async function handler(
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // Build query based on role
+    let whereClause: any = {
+      OR: [
+        { clientId: user.id },
+        { therapistId: user.id },
+      ],
+    };
+
+    // Supervisors also see sessions for their assigned trainees
+    if (user.role === 'SUPERVISOR') {
+      const assignments = await prisma.supervisorAssignment.findMany({
+        where: { supervisorId: user.id, isActive: true },
+        select: { traineeId: true },
+      });
+      const traineeIds = assignments.map((a: { traineeId: string }) => a.traineeId);
+
+      if (traineeIds.length > 0) {
+        whereClause = {
+          OR: [
+            { clientId: user.id },
+            { therapistId: user.id },
+            { therapistId: { in: traineeIds } },
+          ],
+        };
+      }
+    }
+
+    // Admins see all sessions
+    if (user.role === 'ADMIN') {
+      whereClause = {};
+    }
+
     const sessions = await prisma.session.findMany({
-      where: {
-        OR: [
-          { clientId: user.id },
-          { therapistId: user.id },
-        ],
-      },
+      where: whereClause,
       include: {
         client: {
           select: {
