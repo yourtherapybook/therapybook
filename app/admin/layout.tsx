@@ -1,10 +1,8 @@
 import React from 'react';
-import Link from 'next/link';
-import { Shield, Users, FileText, CheckSquare, Activity, LogOut, CreditCard, ScrollText, FolderOpen } from 'lucide-react';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import SignOutButton from '@/components/Auth/SignOutButton';
+import DashboardShell from '@/components/Layout/DashboardShell';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
     const session = await getServerSession(authOptions);
@@ -14,52 +12,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
 
     const navItems = [
-        { name: 'Dashboard', href: '/admin', icon: Activity },
-        { name: 'Applications', href: '/admin/applications', icon: CheckSquare },
-        { name: 'Users', href: '/admin/users', icon: Users },
-        { name: 'Sessions', href: '/admin/sessions', icon: FileText },
-        { name: 'Payments', href: '/admin/payments', icon: CreditCard },
-        { name: 'Documents', href: '/admin/documents', icon: FolderOpen },
-        { name: 'Audit Log', href: '/admin/audit', icon: ScrollText },
+        { href: '/admin', label: 'Dashboard', icon: 'Activity' },
+        { href: '/admin/applications', label: 'Applications', icon: 'CheckSquare' },
+        { href: '/admin/users', label: 'Users', icon: 'Users' },
+        { href: '/admin/sessions', label: 'Sessions', icon: 'FileText' },
+        { href: '/admin/payments', label: 'Payments', icon: 'CreditCard' },
+        { href: '/admin/documents', label: 'Documents', icon: 'FolderOpen' },
+        { href: '/admin/audit', label: 'Audit Log', icon: 'ScrollText' },
     ];
 
     return (
-        <div className="h-[100dvh] bg-neutral-100 flex">
-            {/* Sidebar — sticky, full viewport height */}
-            <aside className="w-64 sticky top-0 h-[100dvh] bg-neutral-900 text-white flex flex-col flex-shrink-0">
-                <div className="h-16 flex items-center px-6 border-b border-neutral-800 shrink-0">
-                    <Shield className="h-6 w-6 text-primary-500 mr-2" />
-                    <span className="text-lg font-bold">Admin Portal</span>
-                </div>
-
-                <nav className="flex-1 overflow-y-auto min-h-0 py-6 px-3 space-y-2">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
-                        >
-                            <item.icon className="h-5 w-5 mr-3 text-neutral-400" />
-                            {item.name}
-                        </Link>
-                    ))}
-                </nav>
-
-                <div className="p-4 border-t border-neutral-800 text-sm text-neutral-400 shrink-0">
-                    <div className="mb-4 truncate px-3 font-medium text-neutral-300">{session.user.email}</div>
-                    <SignOutButton className="flex w-full items-center justify-start px-3 py-2 font-medium rounded-lg text-red-400 hover:bg-neutral-800 transition-colors">
-                        <LogOut className="h-5 w-5 mr-3" />
-                        Sign Out
-                    </SignOutButton>
-                </div>
-            </aside>
-
-            {/* Admin Rendering Surface — scrollable */}
-            <main className="flex-1 overflow-y-auto min-h-0 bg-neutral-50">
-                <div className="p-8 max-w-7xl mx-auto">
-                    {children}
-                </div>
-            </main>
-        </div>
+        <DashboardShell
+            navItems={navItems}
+            userEmail={session.user.email || ''}
+            userName={`${session.user.firstName} ${session.user.lastName}`}
+            variant="dark"
+        >
+            {children}
+        </DashboardShell>
     );
 }
