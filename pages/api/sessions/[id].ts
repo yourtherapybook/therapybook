@@ -98,8 +98,15 @@ export default async function handler(
       const isCancelling = validatedData.status === 'CANCELLED';
       const isStatusChange = Boolean(validatedData.status && !isCancelling);
 
+      // Allow therapist to close out their own past sessions (COMPLETED / NO_SHOW)
       if (isStatusChange && !isAdmin) {
-        return res.status(403).json({ error: 'Only admins can change session status directly.' });
+        const isTherapist = user.id === session.therapist.id;
+        const isCloseout = validatedData.status === 'COMPLETED' || validatedData.status === 'NO_SHOW';
+        const sessionPassed = Date.now() > new Date(session.scheduledAt).getTime() + session.duration * 60 * 1000;
+
+        if (!isTherapist || !isCloseout || !sessionPassed) {
+          return res.status(403).json({ error: 'Only the session therapist can mark past sessions as completed or no-show.' });
+        }
       }
 
       if (validatedData.notes && user.id !== session.therapist.id && !isAdmin) {

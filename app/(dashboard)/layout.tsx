@@ -6,8 +6,8 @@ import DashboardShell from '@/components/Layout/DashboardShell';
 
 const traineeNav = [
     { href: '/trainee-dashboard', label: 'Overview', icon: 'Home' },
-    { href: '/trainee-dashboard#schedule', label: 'My Schedule', icon: 'Calendar' },
-    { href: '/trainee-dashboard#history', label: 'Session History', icon: 'Clock' },
+    { href: '/trainee-dashboard#availability', label: 'Availability', icon: 'Calendar' },
+    { href: '/trainee-dashboard#history', label: 'History', icon: 'Clock' },
 ];
 
 const clientNav = [

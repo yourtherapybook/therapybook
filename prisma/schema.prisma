@@ -50,6 +50,9 @@ model User {
   supervisorAssignments SupervisorAssignment[] @relation("SupervisorUser")
   traineeAssignments    SupervisorAssignment[] @relation("TraineeUser")
 
+  // Session notes
+  authoredNotes SessionNote[] @relation("AuthoredNotes")
+
   @@map("users")
 }
 
@@ -201,13 +204,30 @@ model Session {
   cancelledAt DateTime?
 
   // Relations
-  client    User     @relation("ClientSessions", fields: [clientId], references: [id])
-  therapist User     @relation("TherapistSessions", fields: [therapistId], references: [id])
-  payment   Payment?
+  client       User          @relation("ClientSessions", fields: [clientId], references: [id])
+  therapist    User          @relation("TherapistSessions", fields: [therapistId], references: [id])
+  payment      Payment?
+  sessionNotes SessionNote[]
 
-  // Prevent double-booking: one therapist can only have one active session at a given time
+  // Prevent double-booking
   @@unique([therapistId, scheduledAt], name: "unique_therapist_slot")
   @@map("sessions")
+}
+
+model SessionNote {
+  id        String  @id @default(cuid())
+  sessionId String
+  authorId  String
+  content   String
+  isLocked  Boolean @default(false) // Locked = signed off, no further edits
+
+  createdAt DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  author  User    @relation("AuthoredNotes", fields: [authorId], references: [id])
+
+  @@index([sessionId])
+  @@map("session_notes")
 }
 
 model TherapistAvailability {
