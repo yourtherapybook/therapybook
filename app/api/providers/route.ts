@@ -10,6 +10,7 @@ export async function GET(request: Request) {
     const providers = await prisma.user.findMany({
       where: {
         role: 'TRAINEE',
+        emailVerified: { not: null }, // Only list verified providers
         traineeApplication: {
           status: 'APPROVED',
         },

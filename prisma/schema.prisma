@@ -17,8 +17,9 @@ model User {
   lastName  String
   phone     String?
   password  String? // Made optional for OAuth users
-  role      UserRole @default(CLIENT)
-  timezone  String?  @default("Europe/Berlin") // IANA timezone for scheduling
+  role           UserRole @default(CLIENT)
+  timezone       String?  @default("Europe/Berlin") // IANA timezone for scheduling
+  sessionVersion Int      @default(0) // Increment to revoke all sessions
 
   // NextAuth.js fields
   name          String?

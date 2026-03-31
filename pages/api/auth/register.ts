@@ -58,7 +58,11 @@ export default async function handler(
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists with this email' });
+      // Generic response to prevent email enumeration
+      return res.status(200).json({
+        success: true,
+        message: 'If this email is not already registered, a verification link has been sent.',
+      });
     }
 
     // Hash password

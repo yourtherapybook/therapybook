@@ -84,6 +84,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
         // Enforce approval prerequisites
         if (decision === 'APPROVED') {
+            // Email must be verified before provider can be approved
+            if (!existingApp.user.emailVerified) {
+                return NextResponse.json(
+                    { error: 'Cannot approve: applicant email must be verified first' },
+                    { status: 400 }
+                );
+            }
+
             const agreements = [
                 existingApp.paymentAgreement,
                 existingApp.responseTimeAgreement,

@@ -91,14 +91,12 @@ export default async function SessionRoomPage({
     console.error('Failed to log session room access');
   }
 
-  const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si';
-  const roomPassword = generateRoomPassword(therapySession.id);
-  const roomName = `TherapyBook-${therapySession.id}`;
   const displayName = `${sessionUser.user.firstName} ${sessionUser.user.lastName}`;
   const userRole = sessionUser.user.id === therapySession.therapist.id ? 'therapist' : 'client';
 
-  // Build Jitsi URL with password and config
-  const roomUrl = `https://${jitsiDomain}/${roomName}#config.password="${roomPassword}"&userInfo.displayName="${encodeURIComponent(displayName)}"`;
+  // Room credentials are NEVER passed from server props.
+  // The client must request them via POST /api/sessions/[id]/room
+  // which enforces payment + time-window gates server-side.
 
   return (
     <div className="min-h-screen bg-neutral-50 px-4 py-8 sm:px-6 lg:px-8">
@@ -120,10 +118,7 @@ export default async function SessionRoomPage({
             therapist: therapySession.therapist,
           }}
           userRole={userRole}
-          roomUrl={roomUrl}
-          roomName={roomName}
-          roomPassword={roomPassword}
-          jitsiDomain={jitsiDomain}
+          roomUrl=""
           displayName={displayName}
           userEmail={sessionUser.user.email || undefined}
           paymentStatus={therapySession.payment?.status || null}

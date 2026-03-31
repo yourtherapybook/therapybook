@@ -41,7 +41,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await prisma.$transaction([
             prisma.user.update({
                 where: { id: user.id },
-                data: { password: hashedPassword }
+                data: {
+                    password: hashedPassword,
+                    sessionVersion: { increment: 1 }, // Revoke all existing sessions
+                },
             }),
             prisma.verificationToken.delete({
                 where: { identifier_token: { identifier: verificationToken.identifier, token } }
@@ -52,6 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     userId: user.id,
                     entityId: user.id,
                     entityType: 'User',
+                    details: { sessionsRevoked: true },
                     ipAddress: (typeof req.headers['x-forwarded-for'] === 'string'
                         ? req.headers['x-forwarded-for'].split(',')[0]
                         : req.socket.remoteAddress) || null,

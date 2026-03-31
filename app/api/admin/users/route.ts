@@ -71,7 +71,10 @@ export async function PATCH(request: Request) {
                 const user = await tx.user.update({
                     where: { id: validatedData.userId },
                     data: {
-                        ...(validatedData.role ? { role: validatedData.role } : {}),
+                        ...(validatedData.role ? {
+                            role: validatedData.role,
+                            sessionVersion: { increment: 1 }, // Force re-auth on role change
+                        } : {}),
                         ...(validatedData.emailVerified !== undefined
                             ? { emailVerified: validatedData.emailVerified ? new Date() : null }
                             : {}),
