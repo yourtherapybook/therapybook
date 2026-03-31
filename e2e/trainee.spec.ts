@@ -9,7 +9,7 @@ test.describe('Trainee flows', () => {
 
   test('trainee dashboard loads', async ({ page }) => {
     await page.goto('/trainee-dashboard');
-    await expect(page.locator('text=Practitioner Dashboard')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Practitioner Workspace')).toBeVisible({ timeout: 10000 });
   });
 
   test('trainee dashboard shows availability calendar', async ({ page }) => {

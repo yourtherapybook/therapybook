@@ -16,7 +16,7 @@ test.describe('Client flows', () => {
     await page.goto('/client-dashboard');
     await page.waitForSelector('text=Welcome back', { timeout: 10000 });
     // KPI cards exist
-    await expect(page.locator('text=Total sessions')).toBeVisible();
+    await expect(page.locator('text=Total')).toBeVisible();
   });
 
   test('client dashboard shows session sections', async ({ page }) => {

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../../lib/prisma';
-import { sendSessionReminder } from '../../../lib/resend';
+import { sendEmail, APP_URL } from '../../../lib/email';
 
 export default async function handler(
   req: NextApiRequest,
@@ -63,7 +63,7 @@ export default async function handler(
 
       // Notify client
       try {
-        await sendSessionReminder(session.client.email, clientName, therapistName, sessionTime, meetingUrl, 24);
+        await sendEmail(session.client.email, 'SESSION_REMINDER', { recipientName: clientName, otherPartyName: therapistName, sessionTime, hoursUntil: 24, sessionType: (session as any).type || 'ONLINE', sessionUrl: meetingUrl });
         results.push({ sessionId: session.id, type: '24h', recipient: 'client', status: 'sent' });
       } catch {
         results.push({ sessionId: session.id, type: '24h', recipient: 'client', status: 'failed' });
@@ -71,7 +71,7 @@ export default async function handler(
 
       // Notify therapist
       try {
-        await sendSessionReminder(session.therapist.email, therapistName, clientName, sessionTime, meetingUrl, 24);
+        await sendEmail(session.therapist.email, 'SESSION_REMINDER', { recipientName: therapistName, otherPartyName: clientName, sessionTime, hoursUntil: 24, sessionType: (session as any).type || 'ONLINE', sessionUrl: meetingUrl });
         results.push({ sessionId: session.id, type: '24h', recipient: 'therapist', status: 'sent' });
       } catch {
         results.push({ sessionId: session.id, type: '24h', recipient: 'therapist', status: 'failed' });
@@ -94,14 +94,14 @@ export default async function handler(
       const therapistName = `${session.therapist.firstName} ${session.therapist.lastName}`;
 
       try {
-        await sendSessionReminder(session.client.email, clientName, therapistName, sessionTime, meetingUrl, 1);
+        await sendEmail(session.client.email, 'SESSION_REMINDER', { recipientName: clientName, otherPartyName: therapistName, sessionTime, hoursUntil: 1, sessionType: (session as any).type || 'ONLINE', sessionUrl: meetingUrl });
         results.push({ sessionId: session.id, type: '1h', recipient: 'client', status: 'sent' });
       } catch {
         results.push({ sessionId: session.id, type: '1h', recipient: 'client', status: 'failed' });
       }
 
       try {
-        await sendSessionReminder(session.therapist.email, therapistName, clientName, sessionTime, meetingUrl, 1);
+        await sendEmail(session.therapist.email, 'SESSION_REMINDER', { recipientName: therapistName, otherPartyName: clientName, sessionTime, hoursUntil: 1, sessionType: (session as any).type || 'ONLINE', sessionUrl: meetingUrl });
         results.push({ sessionId: session.id, type: '1h', recipient: 'therapist', status: 'sent' });
       } catch {
         results.push({ sessionId: session.id, type: '1h', recipient: 'therapist', status: 'failed' });

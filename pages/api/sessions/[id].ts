@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { authenticateUser } from '../../../lib/auth-middleware';
 import { prisma } from '../../../lib/prisma';
-import { sendSessionCancellation, sendSessionRescheduled } from '../../../lib/resend';
+import { sendEmail, APP_URL } from '../../../lib/email';
 import { validateTherapistSlot } from '../../../lib/scheduling';
 
 const updateSessionSchema = z.object({
@@ -230,23 +230,16 @@ export default async function handler(
           });
           const cancelReason = validatedData.cancellationReason || 'Session cancelled';
 
-          // Notify client
-          await sendSessionCancellation(
-            updatedSession.client.email,
-            clientName,
-            therapistName,
-            sessionDate,
-            cancelReason
-          ).catch((e) => console.error('Client cancellation email error:', e));
+          // Notify both parties
+          await sendEmail(updatedSession.client.email, 'SESSION_CANCELLED', {
+            recipientName: clientName, otherPartyName: therapistName,
+            date: sessionDate, reason: cancelReason,
+          }).catch((e) => console.error('Client cancellation email:', e));
 
-          // Notify therapist
-          await sendSessionCancellation(
-            updatedSession.therapist.email,
-            therapistName,
-            clientName,
-            sessionDate,
-            cancelReason
-          ).catch((e) => console.error('Therapist cancellation email error:', e));
+          await sendEmail(updatedSession.therapist.email, 'SESSION_CANCELLED', {
+            recipientName: therapistName, otherPartyName: clientName,
+            date: sessionDate, reason: cancelReason,
+          }).catch((e) => console.error('Therapist cancellation email:', e));
         } else if (isRescheduling && validatedData.scheduledAt) {
           const oldDate = session.scheduledAt.toLocaleDateString('en-US', {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -257,19 +250,17 @@ export default async function handler(
           const newTime = updatedSession.scheduledAt.toLocaleTimeString('en-US', {
             hour: '2-digit', minute: '2-digit', hour12: true,
           });
-          const sessionUrl = updatedSession.meetingUrl || `${appUrl}/session/${updatedSession.id}`;
+          const sessionUrl = updatedSession.meetingUrl || `${APP_URL}/session/${updatedSession.id}`;
 
-          // Notify client
-          await sendSessionRescheduled(
-            updatedSession.client.email, clientName, therapistName,
-            oldDate, newDate, newTime, sessionUrl
-          ).catch((e) => console.error('Client reschedule email error:', e));
+          await sendEmail(updatedSession.client.email, 'SESSION_RESCHEDULED', {
+            recipientName: clientName, otherPartyName: therapistName,
+            oldDate, newDate, newTime, sessionUrl,
+          }).catch((e) => console.error('Client reschedule email:', e));
 
-          // Notify therapist
-          await sendSessionRescheduled(
-            updatedSession.therapist.email, therapistName, clientName,
-            oldDate, newDate, newTime, sessionUrl
-          ).catch((e) => console.error('Therapist reschedule email error:', e));
+          await sendEmail(updatedSession.therapist.email, 'SESSION_RESCHEDULED', {
+            recipientName: therapistName, otherPartyName: clientName,
+            oldDate, newDate, newTime, sessionUrl,
+          }).catch((e) => console.error('Therapist reschedule email:', e));
         }
       } catch (emailError) {
         console.error('Session email notification error:', emailError);

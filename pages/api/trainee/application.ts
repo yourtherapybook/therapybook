@@ -3,11 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { authenticateUser } from '../../../lib/auth-middleware';
 import { prisma } from '../../../lib/prisma';
-import {
-  sendAdminApplicationAlert,
-  sendApplicationConfirmation,
-  sendApplicationUnderReview,
-} from '../../../lib/resend';
+import { sendEmail } from '../../../lib/email';
 
 const referralSchema = z.object({
   id: z.string(),
@@ -482,9 +478,12 @@ export default async function handler(
         const applicantName = `${savedApplication.user.firstName} ${savedApplication.user.lastName}`.trim();
 
         try {
-          await sendApplicationConfirmation(savedApplication.user.email, applicantName);
-          await sendApplicationUnderReview(savedApplication.user.email, applicantName);
-          await sendAdminApplicationAlert(applicantName, savedApplication.id);
+          await sendEmail(savedApplication.user.email, 'APPLICATION_RECEIVED', { name: applicantName });
+          const adminEmail = process.env.ADMIN_ALERT_EMAIL || 'admin@therapybook.com';
+          await sendEmail(adminEmail, 'ADMIN_NEW_APPLICATION', {
+            applicantName,
+            applicationId: savedApplication.id,
+          });
         } catch (emailError) {
           console.error('Application submission email error:', emailError);
         }

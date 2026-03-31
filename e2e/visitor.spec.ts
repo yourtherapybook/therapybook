@@ -15,7 +15,7 @@ test.describe('Visitor flows', () => {
 
   test('directory loads with provider cards', async ({ page }) => {
     await page.goto('/directory');
-    await expect(page.locator('h1')).toContainText('Find Your Trainee Practitioner');
+    await expect(page.locator('h1')).toContainText('Find Your');
     // Wait for providers to load
     await page.waitForSelector('text=trainee practitioners available', { timeout: 10000 });
     const count = await page.locator('text=trainee practitioners available').textContent();

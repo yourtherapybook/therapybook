@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
 import { prisma } from '../../../lib/prisma';
-import { sendVerificationEmail } from '../../../lib/resend';
+import { sendEmail, APP_URL } from '../../../lib/email';
 import { buildAuthTokenIdentifier } from '../../../lib/auth-tokens';
 import { authenticateUser } from '../../../lib/auth-middleware';
 
@@ -49,7 +49,8 @@ export default async function handler(
     });
 
     // Send email
-    await sendVerificationEmail(fullUser.email, token);
+    const verifyUrl = `${APP_URL}/auth/verify?token=${encodeURIComponent(token)}`;
+    await sendEmail(fullUser.email, 'VERIFY_EMAIL', { name: 'there', verifyUrl });
 
     return res.status(200).json({
       success: true,

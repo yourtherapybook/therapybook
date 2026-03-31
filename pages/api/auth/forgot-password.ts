@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../../lib/prisma';
-import { sendPasswordReset } from '../../../lib/resend';
+import { sendEmail, APP_URL } from '../../../lib/email';
 import crypto from 'crypto';
 import { buildAuthTokenIdentifier } from '../../../lib/auth-tokens';
 
@@ -36,7 +36,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
         });
 
-        await sendPasswordReset(user.email, token);
+        const resetUrl = `${APP_URL}/auth/reset-password?token=${encodeURIComponent(token)}`;
+        await sendEmail(user.email, 'PASSWORD_RESET', { name: user.firstName, resetUrl });
 
         // Audit log for security visibility
         await prisma.auditLog.create({

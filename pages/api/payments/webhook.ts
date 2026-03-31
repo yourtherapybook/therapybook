@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { sendBookingConfirmation, sendSessionBooked } from '../../../lib/resend';
+import { sendEmail, APP_URL } from '../../../lib/email';
 import { verifyStripeWebhookSignature } from '../../../lib/payments/stripe';
 import { prisma } from '../../../lib/prisma';
 
@@ -84,23 +84,21 @@ export default async function handler(
             });
             const meetingUrl = payment.session.meetingUrl || `${appUrl}/session/${payment.session.id}`;
 
-            await sendBookingConfirmation(
-              payment.session.client.email,
-              `${payment.session.client.firstName} ${payment.session.client.lastName}`,
-              `${payment.session.therapist.firstName} ${payment.session.therapist.lastName}`,
-              sessionDate,
-              sessionTime,
-              meetingUrl
-            );
+            const sessionUrl = `${APP_URL}/session/${payment.session.id}`;
+            const clientName = `${payment.session.client.firstName} ${payment.session.client.lastName}`;
+            const therapistName = `${payment.session.therapist.firstName} ${payment.session.therapist.lastName}`;
 
-            await sendSessionBooked(
-              payment.session.therapist.email,
-              `${payment.session.therapist.firstName} ${payment.session.therapist.lastName}`,
-              `${payment.session.client.firstName} ${payment.session.client.lastName}`,
-              sessionDate,
-              sessionTime,
-              meetingUrl
-            );
+            await sendEmail(payment.session.client.email, 'BOOKING_CONFIRMED', {
+              clientName, therapistName, date: sessionDate, time: sessionTime,
+              duration: payment.session.duration, sessionType: payment.session.type || 'ONLINE',
+              location: payment.session.location || undefined, sessionUrl,
+            });
+
+            await sendEmail(payment.session.therapist.email, 'SESSION_BOOKED_THERAPIST', {
+              therapistName, clientName, date: sessionDate, time: sessionTime,
+              duration: payment.session.duration, sessionType: payment.session.type || 'ONLINE',
+              sessionUrl: `${APP_URL}/trainee-dashboard`,
+            });
           } catch (emailError) {
             console.error('Post-payment booking email error:', emailError);
           }

@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../../../lib/prisma';
-import { sendVerificationEmail } from '../../../lib/resend';
+import { sendEmail, APP_URL } from '../../../lib/email';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { buildAuthTokenIdentifier } from '../../../lib/auth-tokens';
@@ -110,7 +110,8 @@ export default async function handler(
 
     // 3. Dispatch execution
     try {
-      await sendVerificationEmail(user.email, token);
+      const verifyUrl = `${APP_URL}/auth/verify?token=${encodeURIComponent(token)}`;
+      await sendEmail(user.email, 'VERIFY_EMAIL', { name: user.firstName, verifyUrl });
     } catch (e) {
       console.error('[Resend Edge Error] Failed dispatch verification:', e);
       // Operational fault masking: User registration still succeeds locally

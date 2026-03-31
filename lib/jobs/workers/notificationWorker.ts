@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import { RedisService } from '../../services/RedisService';
 import { prisma } from '../../prisma';
-import { sendTransactionalEmail } from '../../resend';
+import { Resend } from 'resend';
 
 const connection = RedisService.getClient();
 
@@ -46,12 +46,16 @@ export const createNotificationWorker = () => {
             if (destinationEmail && payload?.subject) {
                 const html = payload.html || `<p>${payload.message || `${job.name} notification`}</p>`;
 
-                await sendTransactionalEmail({
-                    from: payload.from || 'TherapyBook <noreply@therapybook.com>',
-                    to: destinationEmail,
-                    subject: payload.subject,
-                    html,
-                });
+                const apiKey = process.env.RESEND_API_KEY;
+                if (apiKey) {
+                    const resend = new Resend(apiKey);
+                    await resend.emails.send({
+                        from: payload.from || 'TherapyBook <noreply@therapybook.com>',
+                        to: [destinationEmail],
+                        subject: payload.subject,
+                        html,
+                    });
+                }
             }
 
             return { success: true, processedAt: new Date().toISOString() };

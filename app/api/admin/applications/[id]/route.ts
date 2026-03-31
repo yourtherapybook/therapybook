@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { sendApplicationStatusUpdate, sendApplicationUnderReview } from '@/lib/resend';
+import { sendEmail } from '@/lib/email';
 import { TransactionService } from '@/lib/services/TransactionService';
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -158,15 +158,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
             }
         );
 
-        // Broadcast resolution downstream to the user
+        // Notify applicant of decision
         try {
-            if (decision === 'UNDER_REVIEW') {
-                await sendApplicationUnderReview(existingApp.user.email, existingApp.user.firstName);
-            } else {
-                await sendApplicationStatusUpdate(existingApp.user.email, existingApp.user.firstName, decision);
-            }
+            const templateKey = decision === 'UNDER_REVIEW'
+                ? 'APPLICATION_UNDER_REVIEW' as const
+                : decision === 'APPROVED'
+                    ? 'APPLICATION_APPROVED' as const
+                    : 'APPLICATION_REJECTED' as const;
+            await sendEmail(existingApp.user.email, templateKey, { name: existingApp.user.firstName });
         } catch {
-            console.warn('Silent email drop during administrative approval phase.');
+            console.warn('Email notification failed during application decision.');
         }
 
         return NextResponse.json({ success: true, application: updatedApplication });
