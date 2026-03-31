@@ -3,22 +3,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  CalendarClock,
-  Clock3,
-  Video,
-  Loader2,
-  Star,
-  XCircle,
-  CalendarPlus,
-  CheckCircle2,
-  AlertCircle,
+  CalendarClock, Clock3, Video, Loader2, Star, XCircle,
+  CalendarPlus, CheckCircle2, AlertCircle, CreditCard,
 } from "lucide-react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,31 +47,40 @@ interface UserProfile {
   image: string | null;
 }
 
-const statusConfig: Record<
-  string,
-  { label: string; className: string }
-> = {
-  SCHEDULED: {
-    label: "Scheduled",
-    className: "bg-blue-50 text-blue-700 border-blue-200",
-  },
-  IN_PROGRESS: {
-    label: "In Progress",
-    className: "bg-green-50 text-green-700 border-green-200",
-  },
-  COMPLETED: {
-    label: "Completed",
-    className: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  },
-  CANCELLED: {
-    label: "Cancelled",
-    className: "bg-red-50 text-red-700 border-red-200",
-  },
-  NO_SHOW: {
-    label: "No Show",
-    className: "bg-amber-50 text-amber-700 border-amber-200",
-  },
+const statusConfig: Record<string, { label: string; className: string }> = {
+  SCHEDULED: { label: "Scheduled", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  IN_PROGRESS: { label: "In Progress", className: "bg-green-50 text-green-700 border-green-200" },
+  COMPLETED: { label: "Completed", className: "bg-neutral-100 text-neutral-700 border-neutral-200" },
+  CANCELLED: { label: "Cancelled", className: "bg-red-50 text-red-700 border-red-200" },
+  NO_SHOW: { label: "No Show", className: "bg-amber-50 text-amber-700 border-amber-200" },
 };
+
+const paymentStatusConfig: Record<string, { label: string; className: string }> = {
+  PENDING: { label: "Payment pending", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  PROCESSING: { label: "Processing", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  COMPLETED: { label: "Paid", className: "bg-green-50 text-green-700 border-green-200" },
+  FAILED: { label: "Payment failed", className: "bg-red-50 text-red-700 border-red-200" },
+  REFUNDED: { label: "Refunded", className: "bg-purple-50 text-purple-700 border-purple-200" },
+};
+
+function getJoinWindowText(scheduledAt: string): string {
+  const t = new Date(scheduledAt).getTime();
+  const opensAt = t - 15 * 60 * 1000;
+  const now = Date.now();
+  if (now >= opensAt) return "Room open now";
+  const diff = opensAt - now;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (hours > 0) return `Room opens in ${hours}h ${mins}m`;
+  return `Room opens in ${mins}m`;
+}
+
+function isJoinable(scheduledAt: string, status: string): boolean {
+  if (status !== "SCHEDULED" && status !== "IN_PROGRESS") return false;
+  const t = new Date(scheduledAt).getTime();
+  const now = Date.now();
+  return now >= t - 15 * 60 * 1000 && now <= t + 30 * 60 * 1000;
+}
 
 function getTimeUntil(scheduledAt: string): string {
   const diff = new Date(scheduledAt).getTime() - Date.now();
@@ -95,27 +93,19 @@ function getTimeUntil(scheduledAt: string): string {
   return `in ${minutes} min`;
 }
 
-function isJoinable(scheduledAt: string, status: string): boolean {
-  if (status !== "SCHEDULED" && status !== "IN_PROGRESS") return false;
-  const sessionTime = new Date(scheduledAt).getTime();
-  const now = Date.now();
-  const fifteenMinBefore = sessionTime - 15 * 60 * 1000;
-  const thirtyMinAfter = sessionTime + 30 * 60 * 1000;
-  return now >= fifteenMinBefore && now <= thirtyMinAfter;
-}
-
 export default function ClientDashboard() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [sessions, setSessions] = useState<ClientSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [cancelTarget, setCancelTarget] = useState<ClientSession | null>(null);
   const [rateTarget, setRateTarget] = useState<ClientSession | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', phone: '' });
   const [profileSaving, setProfileSaving] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const HISTORY_PER_PAGE = 10;
 
   const loadData = useCallback(async () => {
     try {
@@ -125,14 +115,9 @@ export default function ClientDashboard() {
         fetch("/api/users/profile"),
         fetch("/api/sessions"),
       ]);
-
-      if (!profileRes.ok || !sessionsRes.ok) {
-        throw new Error("Failed to load your dashboard");
-      }
-
+      if (!profileRes.ok || !sessionsRes.ok) throw new Error("Failed to load your dashboard");
       const profileData = await profileRes.json();
       const sessionsData = await sessionsRes.json();
-
       setProfile(profileData.user);
       setSessions(sessionsData.sessions || []);
     } catch (err) {
@@ -142,38 +127,31 @@ export default function ClientDashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
+  useEffect(() => { void loadData(); }, [loadData]);
 
   const upcomingSessions = useMemo(
-    () =>
-      sessions.filter(
-        (s) =>
-          new Date(s.scheduledAt) >= new Date() &&
-          s.status !== "CANCELLED" &&
-          s.status !== "COMPLETED" &&
-          s.status !== "NO_SHOW"
-      ),
+    () => sessions.filter((s) =>
+      new Date(s.scheduledAt) >= new Date() &&
+      s.status !== "CANCELLED" && s.status !== "COMPLETED" && s.status !== "NO_SHOW"
+    ),
     [sessions]
   );
 
+  // Show ALL past sessions including cancelled (for refund visibility)
   const pastSessions = useMemo(
-    () =>
-      sessions.filter(
-        (s) =>
-          new Date(s.scheduledAt) < new Date() ||
-          s.status === "COMPLETED" ||
-          s.status === "CANCELLED" ||
-          s.status === "NO_SHOW"
-      ),
+    () => sessions.filter((s) =>
+      new Date(s.scheduledAt) < new Date() || s.status === "COMPLETED" || s.status === "CANCELLED" || s.status === "NO_SHOW"
+    ).sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()),
     [sessions]
   );
 
-  const completedCount = useMemo(
-    () => sessions.filter((s) => s.status === "COMPLETED").length,
-    [sessions]
-  );
+  const paginatedHistory = useMemo(() => {
+    const start = (historyPage - 1) * HISTORY_PER_PAGE;
+    return pastSessions.slice(start, start + HISTORY_PER_PAGE);
+  }, [pastSessions, historyPage]);
+  const totalHistoryPages = Math.ceil(pastSessions.length / HISTORY_PER_PAGE);
+
+  const completedCount = useMemo(() => sessions.filter((s) => s.status === "COMPLETED").length, [sessions]);
 
   const showSuccess = (msg: string) => {
     setSuccessMessage(msg);
@@ -183,8 +161,7 @@ export default function ClientDashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20 text-neutral-600">
-        <Loader2 className="h-6 w-6 animate-spin mr-3" />
-        Loading your dashboard...
+        <Loader2 className="h-6 w-6 animate-spin mr-3" /> Loading your dashboard...
       </div>
     );
   }
@@ -200,20 +177,14 @@ export default function ClientDashboard() {
               <p className="text-sm mt-1">{error || "Please try again later."}</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => void loadData()}
-          >
-            Try Again
-          </Button>
+          <Button variant="outline" className="mt-4" onClick={() => void loadData()}>Try Again</Button>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-neutral-900">
@@ -224,15 +195,14 @@ export default function ClientDashboard() {
         </p>
       </div>
 
-      {/* Success toast */}
       {successMessage && (
-        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
           <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
           <p className="text-sm font-medium text-green-800">{successMessage}</p>
         </div>
       )}
 
-      {/* Summary cards */}
+      {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -248,7 +218,7 @@ export default function ClientDashboard() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total sessions</CardDescription>
+            <CardDescription>Total</CardDescription>
             <CardTitle>{sessions.length}</CardTitle>
           </CardHeader>
         </Card>
@@ -262,84 +232,56 @@ export default function ClientDashboard() {
               <CalendarClock className="h-5 w-5 text-primary-500" />
               Upcoming Sessions
             </CardTitle>
-            <CardDescription>
-              Your scheduled therapy sessions. Join when the session window
-              opens.
-            </CardDescription>
+            <CardDescription>Join when the session window opens.</CardDescription>
           </CardHeader>
           <CardContent>
             {upcomingSessions.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {upcomingSessions.map((session) => {
-                  const sessionDate = new Date(session.scheduledAt);
-                  const joinable = isJoinable(
-                    session.scheduledAt,
-                    session.status
-                  );
-                  const status = statusConfig[session.status] || {
-                    label: session.status,
-                    className: "bg-neutral-100 text-neutral-700",
-                  };
-
+                  const joinable = isJoinable(session.scheduledAt, session.status);
+                  const joinText = getJoinWindowText(session.scheduledAt);
+                  const st = statusConfig[session.status] || statusConfig.SCHEDULED;
+                  const paymentOk = session.payment?.status === "COMPLETED";
                   return (
-                    <div
-                      key={session.id}
-                      className="rounded-xl border border-neutral-200 p-4 hover:border-neutral-300 transition-colors"
-                    >
+                    <div key={session.id} className="rounded-xl border border-neutral-200 p-4 hover:border-neutral-300 transition-colors">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
                           <div className="font-medium text-neutral-900">
-                            {session.therapist.firstName}{" "}
-                            {session.therapist.lastName}
+                            {session.therapist.firstName} {session.therapist.lastName}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600">
                             <span>
-                              {sessionDate.toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
+                              {new Date(session.scheduledAt).toLocaleDateString("en-US", {
+                                weekday: "short", month: "short", day: "numeric",
                               })}
                               {" at "}
-                              {sessionDate.toLocaleTimeString("en-US", {
-                                hour: "2-digit",
-                                minute: "2-digit",
+                              {new Date(session.scheduledAt).toLocaleTimeString("en-US", {
+                                hour: "2-digit", minute: "2-digit",
                               })}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Clock3 className="h-3.5 w-3.5" />
-                              {session.duration} min
+                              <Clock3 className="h-3.5 w-3.5" /> {session.duration} min
                             </span>
-                            <span className="text-neutral-400">
-                              {getTimeUntil(session.scheduledAt)}
-                            </span>
+                            <span className="text-xs text-neutral-400">{joinText}</span>
                           </div>
                         </div>
-
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className={status.className}
-                          >
-                            {status.label}
-                          </Badge>
+                          {paymentOk ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Paid</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Payment pending</Badge>
+                          )}
+                          <Badge variant="outline" className={st.className}>{st.label}</Badge>
                           {joinable && (
                             <Button asChild size="sm">
                               <Link href={`/session/${session.id}`}>
-                                <Video className="h-4 w-4" />
-                                Join Session
+                                <Video className="h-4 w-4" /> Join
                               </Link>
                             </Button>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-neutral-500 hover:text-red-600"
-                            onClick={() => setCancelTarget(session)}
-                          >
+                          <Button variant="ghost" size="sm" className="text-neutral-500 hover:text-red-600" onClick={() => setCancelTarget(session)}>
                             <XCircle className="h-4 w-4" />
-                            <span className="sr-only sm:not-sr-only">
-                              Cancel
-                            </span>
+                            <span className="sr-only sm:not-sr-only">Cancel</span>
                           </Button>
                         </div>
                       </div>
@@ -350,16 +292,10 @@ export default function ClientDashboard() {
             ) : (
               <div className="text-center py-8">
                 <CalendarPlus className="h-10 w-10 text-neutral-300 mx-auto mb-3" />
-                <p className="text-sm text-neutral-500 mb-4">
-                  No upcoming sessions. Ready to book your next one?
-                </p>
+                <p className="text-sm text-neutral-500 mb-4">No upcoming sessions. Ready to book?</p>
                 <div className="flex justify-center gap-3">
-                  <Button asChild variant="outline">
-                    <Link href="/booking">Book a Session</Link>
-                  </Button>
-                  <Button asChild variant="outline">
-                    <Link href="/matching">Find a Match</Link>
-                  </Button>
+                  <Button asChild variant="outline"><Link href="/booking">Book a Session</Link></Button>
+                  <Button asChild variant="outline"><Link href="/matching">Find a Match</Link></Button>
                 </div>
               </div>
             )}
@@ -367,7 +303,7 @@ export default function ClientDashboard() {
         </Card>
       </section>
 
-      {/* Past Sessions / History */}
+      {/* Session History — shows ALL including cancelled for refund visibility */}
       <section id="history" className="scroll-mt-24">
         <Card>
           <CardHeader>
@@ -375,83 +311,57 @@ export default function ClientDashboard() {
               <Clock3 className="h-5 w-5 text-primary-500" />
               Session History
             </CardTitle>
-            <CardDescription>
-              Your completed and past sessions.
-            </CardDescription>
+            <CardDescription>Past sessions, ratings, and payment status.</CardDescription>
           </CardHeader>
           <CardContent>
-            {pastSessions.length > 0 ? (
+            {paginatedHistory.length > 0 ? (
               <div className="space-y-3">
-                {pastSessions.map((session) => {
-                  const sessionDate = new Date(session.scheduledAt);
-                  const status = statusConfig[session.status] || {
-                    label: session.status,
-                    className: "bg-neutral-100 text-neutral-700",
-                  };
-                  const canRate =
-                    session.status === "COMPLETED" && session.rating === null;
-
+                {paginatedHistory.map((session) => {
+                  const st = statusConfig[session.status] || statusConfig.COMPLETED;
+                  const canRate = session.status === "COMPLETED" && session.rating === null;
+                  const pst = session.payment ? paymentStatusConfig[session.payment.status] : null;
                   return (
-                    <div
-                      key={session.id}
-                      className="rounded-xl border border-neutral-200 p-4"
-                    >
+                    <div key={session.id} className="rounded-xl border border-neutral-200 p-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
                           <div className="font-medium text-neutral-900">
-                            {session.therapist.firstName}{" "}
-                            {session.therapist.lastName}
+                            {session.therapist.firstName} {session.therapist.lastName}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600">
                             <span>
-                              {sessionDate.toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
+                              {new Date(session.scheduledAt).toLocaleDateString("en-US", {
+                                weekday: "short", month: "short", day: "numeric",
                               })}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Clock3 className="h-3.5 w-3.5" />
-                              {session.duration} min
+                              <Clock3 className="h-3.5 w-3.5" /> {session.duration} min
                             </span>
                             {session.payment && (
-                              <span>
-                                {session.payment.currency}{" "}
-                                {Number(session.payment.amount).toFixed(2)}
+                              <span className="flex items-center gap-1">
+                                <CreditCard className="h-3.5 w-3.5" />
+                                {session.payment.currency} {Number(session.payment.amount).toFixed(2)}
                               </span>
                             )}
                           </div>
                           {session.rating !== null && (
                             <div className="flex items-center gap-1 mt-1">
                               {Array.from({ length: 5 }).map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`h-3.5 w-3.5 ${
-                                    i < session.rating!
-                                      ? "fill-amber-400 text-amber-400"
-                                      : "fill-none text-neutral-300"
-                                  }`}
-                                />
+                                <Star key={i} className={`h-3.5 w-3.5 ${i < session.rating! ? "fill-amber-400 text-amber-400" : "fill-none text-neutral-300"}`} />
                               ))}
                             </div>
                           )}
+                          {session.status === "CANCELLED" && session.cancellationReason && (
+                            <p className="text-xs text-red-600 mt-1">Cancelled: {session.cancellationReason}</p>
+                          )}
                         </div>
-
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className={status.className}
-                          >
-                            {status.label}
-                          </Badge>
+                          <Badge variant="outline" className={st.className}>{st.label}</Badge>
+                          {pst && (
+                            <Badge variant="outline" className={pst.className}>{pst.label}</Badge>
+                          )}
                           {canRate && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setRateTarget(session)}
-                            >
-                              <Star className="h-4 w-4" />
-                              Rate Session
+                            <Button variant="outline" size="sm" onClick={() => setRateTarget(session)}>
+                              <Star className="h-4 w-4" /> Rate
                             </Button>
                           )}
                         </div>
@@ -461,16 +371,21 @@ export default function ClientDashboard() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-neutral-500 py-4 text-center">
-                No session history yet. Your completed sessions will appear
-                here.
-              </p>
+              <p className="text-sm text-neutral-500 py-4 text-center">No session history yet.</p>
+            )}
+
+            {totalHistoryPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <Button variant="outline" size="sm" disabled={historyPage <= 1} onClick={() => setHistoryPage(historyPage - 1)}>Previous</Button>
+                <span className="text-sm text-neutral-500">Page {historyPage} of {totalHistoryPages}</span>
+                <Button variant="outline" size="sm" disabled={historyPage >= totalHistoryPages} onClick={() => setHistoryPage(historyPage + 1)}>Next</Button>
+              </div>
             )}
           </CardContent>
         </Card>
       </section>
 
-      {/* Account section */}
+      {/* Account */}
       <section id="profile" className="scroll-mt-24">
         <Card>
           <CardHeader>
@@ -480,18 +395,10 @@ export default function ClientDashboard() {
                 <CardDescription>Your account details.</CardDescription>
               </div>
               {!editingProfile && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditingProfile(true);
-                    setProfileForm({
-                      firstName: profile.firstName,
-                      lastName: profile.lastName,
-                      phone: profile.phone || '',
-                    });
-                  }}
-                >
+                <Button variant="outline" size="sm" onClick={() => {
+                  setEditingProfile(true);
+                  setProfileForm({ firstName: profile.firstName, lastName: profile.lastName, phone: profile.phone || '' });
+                }}>
                   Edit
                 </Button>
               )}
@@ -503,82 +410,35 @@ export default function ClientDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-neutral-700">First Name</label>
-                    <input
-                      type="text"
-                      value={profileForm.firstName}
-                      onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
-                      className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
+                    <input type="text" value={profileForm.firstName} onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-neutral-700">Last Name</label>
-                    <input
-                      type="text"
-                      value={profileForm.lastName}
-                      onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
-                      className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
+                    <input type="text" value={profileForm.lastName} onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-neutral-700">Phone</label>
-                  <input
-                    type="tel"
-                    value={profileForm.phone}
-                    onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                    placeholder="Optional"
-                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
+                  <input type="tel" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder="Optional" className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    disabled={profileSaving}
-                    onClick={async () => {
-                      setProfileSaving(true);
-                      try {
-                        const res = await fetch('/api/users/profile', {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(profileForm),
-                        });
-                        if (res.ok) {
-                          setEditingProfile(false);
-                          showSuccess('Profile updated');
-                          void loadData();
-                        }
-                      } catch {
-                        // silent
-                      } finally {
-                        setProfileSaving(false);
-                      }
-                    }}
-                  >
+                  <Button size="sm" disabled={profileSaving} onClick={async () => {
+                    setProfileSaving(true);
+                    try {
+                      const res = await fetch('/api/users/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profileForm) });
+                      if (res.ok) { setEditingProfile(false); showSuccess('Profile updated'); void loadData(); }
+                    } catch {} finally { setProfileSaving(false); }
+                  }}>
                     {profileSaving ? 'Saving...' : 'Save'}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setEditingProfile(false)}>
-                    Cancel
-                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setEditingProfile(false)}>Cancel</Button>
                 </div>
               </div>
             ) : (
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                <div>
-                  <dt className="text-neutral-500 font-medium">Name</dt>
-                  <dd className="text-neutral-900 mt-0.5">
-                    {profile.firstName} {profile.lastName}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500 font-medium">Email</dt>
-                  <dd className="text-neutral-900 mt-0.5">{profile.email}</dd>
-                </div>
-                {profile.phone && (
-                  <div>
-                    <dt className="text-neutral-500 font-medium">Phone</dt>
-                    <dd className="text-neutral-900 mt-0.5">{profile.phone}</dd>
-                  </div>
-                )}
+                <div><dt className="text-neutral-500 font-medium">Name</dt><dd className="text-neutral-900 mt-0.5">{profile.firstName} {profile.lastName}</dd></div>
+                <div><dt className="text-neutral-500 font-medium">Email</dt><dd className="text-neutral-900 mt-0.5">{profile.email}</dd></div>
+                {profile.phone && <div><dt className="text-neutral-500 font-medium">Phone</dt><dd className="text-neutral-900 mt-0.5">{profile.phone}</dd></div>}
               </dl>
             )}
           </CardContent>
@@ -589,16 +449,11 @@ export default function ClientDashboard() {
       {cancelTarget && (
         <CancelSessionDialog
           open={!!cancelTarget}
-          onOpenChange={(open) => {
-            if (!open) setCancelTarget(null);
-          }}
+          onOpenChange={(open) => { if (!open) setCancelTarget(null); }}
           sessionId={cancelTarget.id}
           therapistName={`${cancelTarget.therapist.firstName} ${cancelTarget.therapist.lastName}`}
           scheduledAt={cancelTarget.scheduledAt}
-          onCancelled={() => {
-            showSuccess("Session cancelled successfully.");
-            void loadData();
-          }}
+          onCancelled={() => { showSuccess("Session cancelled. If eligible, your refund will be processed."); void loadData(); }}
         />
       )}
 
@@ -606,16 +461,11 @@ export default function ClientDashboard() {
       {rateTarget && (
         <RateSessionDialog
           open={!!rateTarget}
-          onOpenChange={(open) => {
-            if (!open) setRateTarget(null);
-          }}
+          onOpenChange={(open) => { if (!open) setRateTarget(null); }}
           sessionId={rateTarget.id}
           therapistName={`${rateTarget.therapist.firstName} ${rateTarget.therapist.lastName}`}
           scheduledAt={rateTarget.scheduledAt}
-          onRated={() => {
-            showSuccess("Thank you for your feedback!");
-            void loadData();
-          }}
+          onRated={() => { showSuccess("Thank you for your feedback!"); void loadData(); }}
         />
       )}
     </div>

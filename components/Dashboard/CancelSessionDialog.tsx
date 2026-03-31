@@ -99,6 +99,12 @@ export default function CancelSessionDialog({
           </div>
         ) : (
           <div className="space-y-4">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <p className="text-xs text-blue-800">
+                Cancellations made more than 24 hours before the session receive a full refund.
+                Refunds are processed automatically and may take 5–10 business days to appear.
+              </p>
+            </div>
             <div>
               <label
                 htmlFor="cancel-reason"
