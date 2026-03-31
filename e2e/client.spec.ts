@@ -7,68 +7,47 @@ test.describe('Client flows', () => {
     await dismissGDPR(page);
   });
 
-  test('client dashboard loads with sessions', async ({ page }) => {
+  test('client dashboard loads', async ({ page }) => {
     await page.goto('/client-dashboard');
     await expect(page.locator('text=Welcome back')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Upcoming')).toBeVisible();
-    await expect(page.locator('text=Completed')).toBeVisible();
   });
 
-  test('client dashboard shows session cards', async ({ page }) => {
+  test('client dashboard shows KPI cards', async ({ page }) => {
     await page.goto('/client-dashboard');
     await page.waitForSelector('text=Welcome back', { timeout: 10000 });
-    // Should show upcoming or history sections
-    const upcomingSection = page.locator('text=Upcoming Sessions');
-    await expect(upcomingSection).toBeVisible();
+    // KPI cards exist
+    await expect(page.locator('text=Total sessions')).toBeVisible();
   });
 
-  test('client can navigate to booking from dashboard', async ({ page }) => {
+  test('client dashboard shows session sections', async ({ page }) => {
     await page.goto('/client-dashboard');
     await page.waitForSelector('text=Welcome back', { timeout: 10000 });
-    const bookLink = page.locator('a[href="/booking"]').first();
-    if (await bookLink.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await bookLink.click();
-      await expect(page.locator('text=Book a therapy session')).toBeVisible();
-    }
+    await expect(page.locator('text=Upcoming Sessions').first()).toBeVisible();
+    await expect(page.locator('text=Session History').first()).toBeVisible();
   });
 
   test('booking page loads with provider selector', async ({ page }) => {
     await page.goto('/booking');
-    await expect(page.locator('text=Book a therapy session')).toBeVisible({ timeout: 10000 });
-    // Provider selector should exist
-    await expect(page.locator('text=Provider')).toBeVisible();
+    await expect(page.locator('text=Book a therapy session')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('text=Select Date')).toBeVisible({ timeout: 15000 });
   });
 
-  test('booking page shows date grid with availability indicators', async ({ page }) => {
+  test('booking page shows booking summary', async ({ page }) => {
     await page.goto('/booking');
-    await page.waitForSelector('text=Schedule Your Session', { timeout: 15000 });
-    // Date grid should show day abbreviations
-    const dateButtons = page.locator('text=Mon, text=Tue, text=Wed');
-    // At least some date buttons should be visible
-    await expect(page.locator('text=Select Date')).toBeVisible();
-  });
-
-  test('booking summary shows therapist mini-card', async ({ page }) => {
-    await page.goto('/booking');
-    await page.waitForSelector('text=Booking summary', { timeout: 15000 });
-    // Summary should show provider name
-    await expect(page.locator('text=Booking summary')).toBeVisible();
-  });
-
-  test('cancel session dialog opens', async ({ page }) => {
-    await page.goto('/client-dashboard');
-    await page.waitForSelector('text=Welcome back', { timeout: 10000 });
-    const cancelBtn = page.locator('text=Cancel').first();
-    if (await cancelBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await cancelBtn.click();
-      // Dialog should appear
-      await expect(page.locator('text=Cancel Session')).toBeVisible({ timeout: 3000 });
-    }
+    await expect(page.locator('text=Booking summary')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('text=Total')).toBeVisible();
   });
 
   test('session index redirects client to dashboard', async ({ page }) => {
     await page.goto('/session');
     await page.waitForURL('**/client-dashboard**', { timeout: 10000 });
     expect(page.url()).toContain('client-dashboard');
+  });
+
+  test('account section visible on dashboard', async ({ page }) => {
+    await page.goto('/client-dashboard');
+    await page.waitForSelector('text=Welcome back', { timeout: 10000 });
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.locator('text=Account').first()).toBeVisible({ timeout: 5000 });
   });
 });

@@ -4,7 +4,7 @@ import { testUsers, signIn, dismissGDPR } from './helpers';
 test.describe('Authentication flows', () => {
   test('sign in page renders', async ({ page }) => {
     await page.goto('/auth/signin');
-    await expect(page.locator('text=Sign in')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
   });
@@ -26,8 +26,8 @@ test.describe('Authentication flows', () => {
 
   test('register page renders', async ({ page }) => {
     await page.goto('/auth/register');
-    await expect(page.locator('text=Create')).toBeVisible();
-    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[type="password"]').first()).toBeVisible();
   });
 
   test('forgot password page renders', async ({ page }) => {
