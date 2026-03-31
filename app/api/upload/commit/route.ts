@@ -25,6 +25,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // Verify the r2Key belongs to this user (key format: {userId}/{type}/{uuid})
+    if (!result.data.r2Key.startsWith(`${userId}/`)) {
+      return NextResponse.json(
+        errorResponse('FORBIDDEN', 'Invalid file key'),
+        { status: 403 }
+      );
+    }
+
+    // Verify the file actually exists in R2 before writing to DB
+    const exists = await StorageService.verifyUpload(result.data.r2Key);
+    if (!exists) {
+      return NextResponse.json(
+        errorResponse('NOT_FOUND', 'File not found in storage — upload may have failed'),
+        { status: 404 }
+      );
+    }
+
     const document = await StorageService.commitDocumentRecord({
       userId,
       r2Key: result.data.r2Key,
