@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Filter, Info, Loader2, Users, Search, ArrowUpDown } from 'lucide-react';
+import { Filter, Loader2, Users, Search, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import TherapistCard from '@/components/TherapistDirectory/TherapistCard';
@@ -123,27 +123,14 @@ const Directory: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <div className="flex items-start space-x-3">
-            <Info className="h-6 w-6 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-blue-900 mb-2">About Our Trainee Practitioners</h3>
-              <p className="text-blue-800 leading-relaxed">
-                All practitioners listed here are approved trainees whose credentials have been verified during onboarding.
-                Availability and profile details come directly from the live provider application data.
-              </p>
-            </div>
-          </div>
-        </div>
-
         <div className="mb-8 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-neutral-900 mb-2">
-                Find Your Trainee Practitioner
+                Find Your Therapist
               </h1>
-              <p className="text-lg text-neutral-600">
-                {isLoading ? 'Loading providers...' : `${filteredTherapists.length} trainee practitioners available`}
+              <p className="text-neutral-600">
+                {isLoading ? 'Loading providers...' : `${filteredTherapists.length} verified trainee therapists · Credentials reviewed · Book instantly`}
               </p>
             </div>
             <div className="flex items-center space-x-4">
