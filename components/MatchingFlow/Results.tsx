@@ -19,10 +19,10 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
           <Heart className="h-8 w-8 text-primary-500" />
         </div>
         <h1 className="text-3xl font-bold text-neutral-900 mb-4">
-          Your Perfect Matches
+          Your Recommended Matches
         </h1>
         <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-          Based on your responses, we've found {results.length} therapists who are perfectly suited to support your mental health journey.
+          Based on your preferences, here are the trainee therapists best suited to work with you.
         </p>
       </div>
 
@@ -40,8 +40,12 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
                   <span className="bg-primary-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                     #{index + 1} Match
                   </span>
-                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
-                    {result.matchPercentage}% Match
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    result.matchPercentage >= 80 ? 'bg-green-100 text-green-800' :
+                    result.matchPercentage >= 55 ? 'bg-blue-100 text-blue-800' :
+                    'bg-neutral-100 text-neutral-700'
+                  }`}>
+                    {result.matchLabel || `${result.matchPercentage}%`}
                   </span>
                 </div>
                 <div className="text-sm text-neutral-600">
@@ -85,7 +89,7 @@ const Results: React.FC<ResultsProps> = ({ results, onBookSession, onRetakeAsses
                   {/* Match reasons */}
                   <div>
                     <h4 className="font-medium text-neutral-900 mb-2">
-                      Why this is a great match:
+                      Why we recommend this therapist:
                     </h4>
                     <ul className="space-y-1">
                       {result.reasons.map((reason, reasonIndex) => (

@@ -1,19 +1,27 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Button } from '../ui/button';
 import { QuestionnaireStep } from '../../types';
 import { QUESTIONNAIRE_STEPS } from '../../utils/constants';
 
 interface QuestionnaireProps {
   onComplete: (answers: Record<string, string[]>) => void;
+  crisisScreeningStep?: QuestionnaireStep;
 }
 
-const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
+const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete, crisisScreeningStep }) => {
+  const allSteps = useMemo(() => {
+    return crisisScreeningStep
+      ? [crisisScreeningStep, ...QUESTIONNAIRE_STEPS]
+      : QUESTIONNAIRE_STEPS;
+  }, [crisisScreeningStep]);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
 
-  const currentQuestion = QUESTIONNAIRE_STEPS[currentStep];
-  const isLastStep = currentStep === QUESTIONNAIRE_STEPS.length - 1;
+  const currentQuestion = allSteps[currentStep];
+  const isLastStep = currentStep === allSteps.length - 1;
   const currentAnswer = answers[currentQuestion.id] || [];
 
   const handleAnswerChange = (answer: string) => {
@@ -49,16 +57,16 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-neutral-600">
-            Step {currentStep + 1} of {QUESTIONNAIRE_STEPS.length}
+            Step {currentStep + 1} of {allSteps.length}
           </span>
           <span className="text-sm text-neutral-500">
-            {Math.round(((currentStep + 1) / QUESTIONNAIRE_STEPS.length) * 100)}% Complete
+            {Math.round(((currentStep + 1) / allSteps.length) * 100)}% Complete
           </span>
         </div>
         <div className="w-full bg-neutral-200 rounded-full h-2">
           <div
             className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${((currentStep + 1) / QUESTIONNAIRE_STEPS.length) * 100}%` }}
+            style={{ width: `${((currentStep + 1) / allSteps.length) * 100}%` }}
           />
         </div>
       </div>
@@ -100,21 +108,17 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
 
       {/* Navigation */}
       <div className="flex items-center justify-between">
-        <button
+        <Button
+          variant="ghost"
           onClick={handlePrevious}
           disabled={currentStep === 0}
-          className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-            currentStep === 0
-              ? 'text-neutral-400 cursor-not-allowed'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
-          }`}
         >
-          <ChevronLeft className="h-5 w-5 mr-2" />
+          <ChevronLeft className="h-5 w-5" />
           Previous
-        </button>
+        </Button>
 
         <div className="flex space-x-2">
-          {QUESTIONNAIRE_STEPS.map((_, index) => (
+          {allSteps.map((_, index) => (
             <div
               key={index}
               className={`w-2 h-2 rounded-full transition-colors ${
@@ -124,18 +128,13 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
           ))}
         </div>
 
-        <button
+        <Button
           onClick={handleNext}
           disabled={!canProceed}
-          className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-            canProceed
-              ? 'bg-primary-500 hover:bg-primary-600 text-white'
-              : 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
-          }`}
         >
           {isLastStep ? 'Get Results' : 'Next'}
-          {!isLastStep && <ChevronRight className="h-5 w-5 ml-2" />}
-        </button>
+          {!isLastStep && <ChevronRight className="h-5 w-5" />}
+        </Button>
       </div>
     </div>
   );

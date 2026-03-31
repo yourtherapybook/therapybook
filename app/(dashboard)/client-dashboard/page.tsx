@@ -350,9 +350,14 @@ export default function ClientDashboard() {
                 <p className="text-sm text-neutral-500 mb-4">
                   No upcoming sessions. Ready to book your next one?
                 </p>
-                <Button asChild variant="outline">
-                  <Link href="/booking">Book a Session</Link>
-                </Button>
+                <div className="flex justify-center gap-3">
+                  <Button asChild variant="outline">
+                    <Link href="/booking">Book a Session</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/matching">Find a Match</Link>
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

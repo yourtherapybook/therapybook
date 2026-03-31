@@ -37,6 +37,7 @@ export interface QuestionnaireStep {
 export interface MatchingResult {
   therapist: Therapist;
   matchPercentage: number;
+  matchLabel?: string;
   reasons: string[];
 }
 
