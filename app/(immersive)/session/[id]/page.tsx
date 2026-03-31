@@ -110,6 +110,11 @@ export default async function SessionRoomPage({
           }}
           userRole={userRole}
           roomUrl={roomUrl}
+          roomName={roomName}
+          roomPassword={roomPassword}
+          jitsiDomain={jitsiDomain}
+          displayName={displayName}
+          userEmail={sessionUser.user.email || undefined}
           paymentStatus={therapySession.payment?.status || null}
         />
       </div>

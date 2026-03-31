@@ -1,9 +1,10 @@
-const CACHE_NAME = 'therapybook-v1';
-const STATIC_ASSETS = ['/', '/directory', '/pricing', '/matching'];
+const CACHE_NAME = 'therapybook-v2';
+const OFFLINE_URL = '/offline.html';
+const PRECACHE = ['/', '/directory', '/pricing', '/matching', '/offline.html', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
   );
   self.skipWaiting();
 });
@@ -11,11 +12,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -25,12 +22,10 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
 
   // Skip non-GET and API requests
-  if (request.method !== 'GET' || request.url.includes('/api/')) {
-    return;
-  }
+  if (request.method !== 'GET' || request.url.includes('/api/')) return;
 
-  // Network-first for HTML pages
-  if (request.headers.get('accept')?.includes('text/html')) {
+  // Navigation requests: network-first with offline fallback
+  if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -38,12 +33,12 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(OFFLINE_URL))
     );
     return;
   }
 
-  // Cache-first for static assets
+  // Static assets: cache-first
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request))
   );

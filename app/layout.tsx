@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { GDPRBanner } from '@/components/gdpr-banner';
+import { PWAInstallPrompt } from '@/components/Common/PWAInstallPrompt';
 
 export const metadata: Metadata = {
     title: 'TherapyBook — Affordable Trainee Therapy',
@@ -33,6 +34,7 @@ export default function RootLayout({
                 <Providers>
                     {children}
                     <GDPRBanner />
+                    <PWAInstallPrompt />
                 </Providers>
                 <script
                     dangerouslySetInnerHTML={{

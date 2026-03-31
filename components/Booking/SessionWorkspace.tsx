@@ -3,11 +3,17 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CalendarClock, CheckCircle2, Info, Video, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SessionManager from './SessionManager';
+import DailyRoom from './DailyRoom';
 
 interface SessionWorkspaceProps {
   initialSession: any;
   userRole: 'client' | 'therapist';
   roomUrl: string;
+  roomName?: string;
+  roomPassword?: string;
+  jitsiDomain?: string;
+  displayName?: string;
+  userEmail?: string;
   paymentStatus?: string | null;
 }
 
@@ -19,11 +25,19 @@ export default function SessionWorkspace({
   initialSession,
   userRole,
   roomUrl,
+  roomName,
+  roomPassword,
+  jitsiDomain,
+  displayName,
+  userEmail,
   paymentStatus,
 }: SessionWorkspaceProps) {
   const [session, setSession] = useState(initialSession);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [consentGiven, setConsentGiven] = useState(false);
+  const [dailyRoomUrl, setDailyRoomUrl] = useState<string | null>(null);
+  const [roomProvider, setRoomProvider] = useState<'daily' | 'jitsi' | null>(null);
+  const [roomLoading, setRoomLoading] = useState(false);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -66,16 +80,37 @@ export default function SessionWorkspace({
             ) : accessState.canJoin ? (
               consentGiven ? (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-neutral-200 overflow-hidden">
-                    <iframe
-                      title="TherapyBook session room"
-                      src={roomUrl}
-                      className="h-[560px] w-full"
-                      allow="camera; microphone; fullscreen; display-capture"
+                  {dailyRoomUrl && roomProvider === 'daily' ? (
+                    <DailyRoom
+                      roomUrl={dailyRoomUrl}
+                      displayName={displayName || 'Participant'}
                     />
-                  </div>
+                  ) : dailyRoomUrl ? (
+                    <div className="rounded-xl border border-neutral-200 overflow-hidden">
+                      <iframe
+                        title="TherapyBook session room"
+                        src={dailyRoomUrl}
+                        className="h-[560px] w-full"
+                        allow="camera; microphone; fullscreen; display-capture"
+                      />
+                    </div>
+                  ) : roomLoading ? (
+                    <div className="flex items-center justify-center py-16 text-neutral-500">
+                      <Video className="h-5 w-5 animate-pulse mr-2" /> Preparing session room...
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-neutral-200 overflow-hidden">
+                      <iframe
+                        title="TherapyBook session room"
+                        src={roomUrl}
+                        className="h-[560px] w-full"
+                        allow="camera; microphone; fullscreen; display-capture"
+                      />
+                    </div>
+                  )}
                   <p className="text-sm text-neutral-500">
-                    This room is password-protected and only available to session participants.
+                    This room is encrypted and only available to session participants.
+                    {roomProvider === 'daily' && ' Hosted in the EU.'}
                   </p>
                 </div>
               ) : (
@@ -104,7 +139,24 @@ export default function SessionWorkspace({
                     </div>
                   </div>
                   <Button
-                    onClick={() => setConsentGiven(true)}
+                    onClick={async () => {
+                      setConsentGiven(true);
+                      setRoomLoading(true);
+                      try {
+                        const res = await fetch(`/api/sessions/${session.id}/room`, { method: 'POST' });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setDailyRoomUrl(data.roomUrl);
+                          setRoomProvider(data.provider);
+                        }
+                      } catch {
+                        // Fallback to existing roomUrl
+                        setDailyRoomUrl(roomUrl);
+                        setRoomProvider('jitsi');
+                      } finally {
+                        setRoomLoading(false);
+                      }
+                    }}
                     className="w-full"
                     size="lg"
                   >
