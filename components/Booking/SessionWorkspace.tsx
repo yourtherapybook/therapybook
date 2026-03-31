@@ -38,14 +38,41 @@ export default function SessionWorkspace({
   const [dailyRoomUrl, setDailyRoomUrl] = useState<string | null>(null);
   const [roomProvider, setRoomProvider] = useState<'daily' | 'jitsi' | null>(null);
   const [roomLoading, setRoomLoading] = useState(false);
+  const [roomError, setRoomError] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
       setCurrentTime(new Date());
     }, 30000);
-
     return () => window.clearInterval(interval);
   }, []);
+
+  // Provision room when consent is given
+  useEffect(() => {
+    if (!consentGiven || dailyRoomUrl || roomLoading) return;
+
+    const provisionRoom = async () => {
+      setRoomLoading(true);
+      try {
+        const res = await fetch(`/api/sessions/${session.id}/room`, { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          setDailyRoomUrl(data.roomUrl);
+          setRoomProvider(data.provider);
+        } else {
+          setDailyRoomUrl(roomUrl);
+          setRoomProvider('jitsi');
+        }
+      } catch {
+        setDailyRoomUrl(roomUrl);
+        setRoomProvider('jitsi');
+      } finally {
+        setRoomLoading(false);
+      }
+    };
+
+    void provisionRoom();
+  }, [consentGiven, dailyRoomUrl, roomLoading, session.id, roomUrl]);
 
   const accessState = useMemo(() => {
     const scheduledAt = new Date(session.scheduledAt);
@@ -94,18 +121,9 @@ export default function SessionWorkspace({
                         allow="camera; microphone; fullscreen; display-capture"
                       />
                     </div>
-                  ) : roomLoading ? (
+                  ) : (
                     <div className="flex items-center justify-center py-16 text-neutral-500">
                       <Video className="h-5 w-5 animate-pulse mr-2" /> Preparing session room...
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-neutral-200 overflow-hidden">
-                      <iframe
-                        title="TherapyBook session room"
-                        src={roomUrl}
-                        className="h-[560px] w-full"
-                        allow="camera; microphone; fullscreen; display-capture"
-                      />
                     </div>
                   )}
                   <p className="text-sm text-neutral-500">
@@ -139,24 +157,7 @@ export default function SessionWorkspace({
                     </div>
                   </div>
                   <Button
-                    onClick={async () => {
-                      setConsentGiven(true);
-                      setRoomLoading(true);
-                      try {
-                        const res = await fetch(`/api/sessions/${session.id}/room`, { method: 'POST' });
-                        if (res.ok) {
-                          const data = await res.json();
-                          setDailyRoomUrl(data.roomUrl);
-                          setRoomProvider(data.provider);
-                        }
-                      } catch {
-                        // Fallback to existing roomUrl
-                        setDailyRoomUrl(roomUrl);
-                        setRoomProvider('jitsi');
-                      } finally {
-                        setRoomLoading(false);
-                      }
-                    }}
+                    onClick={() => setConsentGiven(true)}
                     className="w-full"
                     size="lg"
                   >
