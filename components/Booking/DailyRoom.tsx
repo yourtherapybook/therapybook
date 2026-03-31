@@ -38,11 +38,16 @@ export default function DailyRoom({
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || callRef.current) return;
+
+    const container = containerRef.current;
 
     const initCall = async () => {
       try {
-        const call = DailyIframe.createFrame(containerRef.current!, {
+        // Clear any existing iframes from previous mount (React Strict Mode)
+        container.querySelectorAll('iframe').forEach((el) => el.remove());
+
+        const call = DailyIframe.createFrame(container, {
           iframeStyle: {
             width: '100%',
             height: '560px',

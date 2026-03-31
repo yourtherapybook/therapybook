@@ -90,7 +90,6 @@ export async function POST(
           max_participants: 4, // client + therapist + optional supervisor + admin
           enable_chat: true,
           enable_screenshare: true,
-          enable_recording: 'none', // disabled for privacy
           geo: 'eu', // EU data residency
           lang: 'en',
         },
